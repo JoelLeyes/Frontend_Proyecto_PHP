@@ -1,21 +1,33 @@
 <template>
-  <div class="contenedor-auth">
-    <h1>Iniciar sesión</h1>
+  <div class="auth-formulario">
+
+    <div class="auth-formulario__cabecera">
+      <h2>Bienvenido de vuelta</h2>
+      <p>Ingresá con tu cuenta para continuar</p>
+    </div>
+
     <form @submit.prevent="manejarInicioSesion">
-      <div>
+      <div class="campo">
         <label>Email</label>
-        <input v-model="formulario.email" type="email" required />
+        <input v-model="formulario.email" type="email" placeholder="ejemplo@correo.com" required />
       </div>
-      <div>
+      <div class="campo">
         <label>Contraseña</label>
-        <input v-model="formulario.password" type="password" required />
+        <input v-model="formulario.password" type="password" placeholder="Tu contraseña" required />
       </div>
-      <p v-if="error" class="error">{{ error }}</p>
-      <button type="submit" :disabled="cargando">
+
+      <p v-if="error" class="alerta alerta--error">{{ error }}</p>
+
+      <button type="submit" class="boton-principal boton-bloque" :disabled="cargando">
         {{ cargando ? 'Ingresando...' : 'Ingresar' }}
       </button>
     </form>
-    <RouterLink :to="{ name: 'registrarse' }">¿No tenés cuenta? Registrate</RouterLink>
+
+    <p class="auth-formulario__pie">
+      ¿No tenés cuenta?
+      <RouterLink :to="{ name: 'registrarse' }">Registrate gratis</RouterLink>
+    </p>
+
   </div>
 </template>
 
@@ -38,7 +50,7 @@ async function manejarInicioSesion() {
     await auth.iniciarSesion(formulario.value.email, formulario.value.password)
     enrutador.push({ name: 'panel' })
   } catch (e) {
-    error.value = e.response?.data?.error || 'Error al iniciar sesión.'
+    error.value = e.response?.data?.error || 'Email o contraseña incorrectos.'
   } finally {
     cargando.value = false
   }
