@@ -1,14 +1,9 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import laravel from 'laravel-vite-plugin'
 import { fileURLToPath, URL } from 'node:url'
 
 export default defineConfig({
     plugins: [
-        laravel({
-            input: ['resources/js/app.js'],
-            refresh: true,
-        }),
         vue(),
     ],
     resolve: {
@@ -19,5 +14,17 @@ export default defineConfig({
     server: {
         host: '0.0.0.0',
         port: 5173,
+    },
+    preview: {
+        host: '0.0.0.0',
+        port: 5173,
+        strictPort: true,
+        allowedHosts: ['app.agendaonline.cloud-ip.cc', 'api.agendaonline.cloud-ip.cc', 'localhost', '127.0.0.1'],
+    },
+    build: {
+        outDir: 'dist',
+        rollupOptions: {
+            input: '/index.html',
+        },
     },
 })
