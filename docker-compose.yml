@@ -16,4 +16,4 @@ services:
       - "5173:5173"
     environment:
       APP_ENV: local
-      VITE_API_URL: http://localhost:8000
+      VITE_API_URL: https://api.agendaonline.cloud-ip.cc

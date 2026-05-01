@@ -6,7 +6,7 @@ import enrutador from './router'
 import axios from 'axios'
 
 // URL base del backend Laravel API
-axios.defaults.baseURL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+axios.defaults.baseURL = import.meta.env.VITE_API_URL || 'https://api.agendaonline.cloud-ip.cc'
 axios.defaults.headers.common['Accept'] = 'application/json'
 
 // Si hay un token guardado, adjuntarlo a cada petición
