@@ -4,87 +4,342 @@
       <h1 class="layout-panel__titulo-pagina">Mi Disponibilidad</h1>
     </div>
 
-    <div class="disponibilidad-info">
-      <div class="disponibilidad-info__icono">🕐</div>
-      <h2>Configurá tu agenda</h2>
-      <p>
-        Definí tus horarios laborales por día de la semana, establecé buffers entre turnos
-        y marcá los días en que no estás disponible (feriados, licencias, etc.).
-      </p>
-      <div class="disponibilidad-pasos">
-        <div class="disponibilidad-paso">
-          <div class="disponibilidad-paso__numero">1</div>
+    <div v-if="cargando" class="cargando">Cargando configuración...</div>
+
+    <template v-else>
+
+      <!-- ═══ REGLAS DE HORARIO ═══ -->
+      <section class="dispon-seccion">
+        <div class="dispon-seccion__cabecera">
           <div>
-            <strong>Reglas de horario</strong>
-            <p>Seleccioná los días que atendés y el rango horario de cada uno.</p>
+            <h2 class="dispon-seccion__titulo">Reglas de horario</h2>
+            <p class="dispon-seccion__desc">Días y rangos horarios en que atendés.</p>
           </div>
+          <button class="boton-principal boton-sm" @click="abrirFormRegla()">+ Nueva regla</button>
         </div>
-        <div class="disponibilidad-paso">
-          <div class="disponibilidad-paso__numero">2</div>
-          <div>
-            <strong>Buffer entre turnos</strong>
-            <p>Configurá el tiempo de descanso antes y después de cada reserva.</p>
-          </div>
+
+        <div v-if="reglas.length" class="tabla-wrapper">
+          <table class="tabla">
+            <thead>
+              <tr>
+                <th>Día</th>
+                <th>Desde</th>
+                <th>Hasta</th>
+                <th>Buffer antes</th>
+                <th>Buffer después</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="regla in reglas" :key="regla.id">
+                <td>{{ DIAS[regla.dia_semana] }}</td>
+                <td>{{ regla.hora_inicio }}</td>
+                <td>{{ regla.hora_fin }}</td>
+                <td>{{ regla.buffer_antes_minutos ?? 0 }} min</td>
+                <td>{{ regla.buffer_despues_minutos ?? 0 }} min</td>
+                <td class="tabla__acciones">
+                  <button class="btn-icono" title="Editar" @click="abrirFormRegla(regla)">✏️</button>
+                  <button class="btn-icono btn-icono--peligro" title="Eliminar" @click="eliminarRegla(regla.id)">🗑️</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
-        <div class="disponibilidad-paso">
-          <div class="disponibilidad-paso__numero">3</div>
+        <div v-else class="estado-vacio-inline">
+          <span>No tenés reglas configuradas.</span>
+        </div>
+      </section>
+
+      <!-- ═══ EXCEPCIONES ═══ -->
+      <section class="dispon-seccion">
+        <div class="dispon-seccion__cabecera">
           <div>
-            <strong>Excepciones</strong>
-            <p>Bloqueá días específicos para feriados o ausencias puntuales.</p>
+            <h2 class="dispon-seccion__titulo">Excepciones</h2>
+            <p class="dispon-seccion__desc">Días bloqueados por feriado, licencia u otra ausencia.</p>
           </div>
+          <button class="boton-principal boton-sm" @click="abrirFormExcepcion()">+ Nueva excepción</button>
+        </div>
+
+        <div v-if="excepciones.length" class="tabla-wrapper">
+          <table class="tabla">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Estado</th>
+                <th>Motivo</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="exc in excepciones" :key="exc.id">
+                <td>{{ exc.fecha }}</td>
+                <td>
+                  <span :class="exc.disponible ? 'chip-verde' : 'chip-rojo'">
+                    {{ exc.disponible ? 'Disponible' : 'Bloqueado' }}
+                  </span>
+                </td>
+                <td>{{ exc.motivo || '—' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div v-else class="estado-vacio-inline">
+          <span>No hay excepciones futuras.</span>
+        </div>
+      </section>
+
+    </template>
+
+    <!-- ═══ Modal regla ═══ -->
+    <Teleport to="body">
+      <div v-if="modalRegla.abierto" class="modal-overlay" @click.self="cerrarModalRegla">
+        <div class="modal" role="dialog" aria-modal="true">
+
+          <div class="modal__cabecera">
+            <div>
+              <h3 class="modal__titulo">{{ modalRegla.regla ? 'Editar regla' : 'Nueva regla' }}</h3>
+            </div>
+            <button class="modal__cerrar" @click="cerrarModalRegla" aria-label="Cerrar">✕</button>
+          </div>
+
+          <div class="modal__cuerpo">
+            <div class="campo">
+              <label>Día de la semana</label>
+              <select v-model.number="modalRegla.form.dia_semana">
+                <option v-for="(nombre, idx) in DIAS" :key="idx" :value="idx">{{ nombre }}</option>
+              </select>
+            </div>
+            <div class="dispon-fila-2">
+              <div class="campo">
+                <label>Hora inicio</label>
+                <input type="time" v-model="modalRegla.form.hora_inicio" />
+              </div>
+              <div class="campo">
+                <label>Hora fin</label>
+                <input type="time" v-model="modalRegla.form.hora_fin" />
+              </div>
+            </div>
+            <div class="dispon-fila-2">
+              <div class="campo">
+                <label>Buffer antes (min)</label>
+                <input type="number" min="0" v-model.number="modalRegla.form.buffer_antes_minutos" />
+              </div>
+              <div class="campo">
+                <label>Buffer después (min)</label>
+                <input type="number" min="0" v-model.number="modalRegla.form.buffer_despues_minutos" />
+              </div>
+            </div>
+            <p v-if="modalRegla.error" class="alerta alerta--error">{{ modalRegla.error }}</p>
+          </div>
+
+          <div class="modal__pie">
+            <button class="boton-secundario" @click="cerrarModalRegla">Cancelar</button>
+            <button class="boton-principal" :disabled="modalRegla.enviando" @click="guardarRegla">
+              {{ modalRegla.enviando ? 'Guardando...' : 'Guardar' }}
+            </button>
+          </div>
+
         </div>
       </div>
-      <p class="disponibilidad-pronto">✨ Esta sección estará disponible próximamente.</p>
-    </div>
+    </Teleport>
+
+    <!-- ═══ Modal excepción ═══ -->
+    <Teleport to="body">
+      <div v-if="modalExc.abierto" class="modal-overlay" @click.self="cerrarModalExc">
+        <div class="modal" role="dialog" aria-modal="true">
+
+          <div class="modal__cabecera">
+            <div>
+              <h3 class="modal__titulo">Nueva excepción</h3>
+            </div>
+            <button class="modal__cerrar" @click="cerrarModalExc" aria-label="Cerrar">✕</button>
+          </div>
+
+          <div class="modal__cuerpo">
+            <div class="campo">
+              <label>Fecha</label>
+              <input type="date" v-model="modalExc.form.fecha" :min="hoy" />
+            </div>
+            <div class="campo">
+              <label>Estado</label>
+              <select v-model="modalExc.form.disponible">
+                <option :value="false">Bloqueado (ausencia)</option>
+                <option :value="true">Disponible extra</option>
+              </select>
+            </div>
+            <div class="campo">
+              <label>Motivo <span style="font-weight:400">(opcional)</span></label>
+              <input type="text" v-model="modalExc.form.motivo" placeholder="Ej: Feriado nacional, vacaciones..." />
+            </div>
+            <p v-if="modalExc.error" class="alerta alerta--error">{{ modalExc.error }}</p>
+          </div>
+
+          <div class="modal__pie">
+            <button class="boton-secundario" @click="cerrarModalExc">Cancelar</button>
+            <button class="boton-principal" :disabled="modalExc.enviando" @click="guardarExcepcion">
+              {{ modalExc.enviando ? 'Guardando...' : 'Guardar' }}
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </Teleport>
+
   </div>
 </template>
 
+<script setup>
+import { ref, onMounted } from 'vue'
+import { useAuthStore } from '@/stores/auth'
+import axios from 'axios'
+
+const auth    = useAuthStore()
+const cargando = ref(true)
+const reglas   = ref([])
+const excepciones = ref([])
+const hoy      = new Date().toISOString().slice(0, 10)
+
+const DIAS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
+
+const profesionalId = auth.usuario?.profesional?.id
+
+// ── Estado modales ────────────────────────────────────────────────────────────
+const modalRegla = ref({ abierto: false, regla: null, enviando: false, error: '', form: reglaPorDefecto() })
+const modalExc   = ref({ abierto: false, enviando: false, error: '', form: excepcionPorDefecto() })
+
+function reglaPorDefecto() {
+  return { dia_semana: 1, hora_inicio: '09:00', hora_fin: '18:00', buffer_antes_minutos: 0, buffer_despues_minutos: 0 }
+}
+function excepcionPorDefecto() {
+  return { fecha: '', disponible: false, motivo: '' }
+}
+
+// ── Carga inicial ─────────────────────────────────────────────────────────────
+async function cargarDatos() {
+  if (!profesionalId) { cargando.value = false; return }
+  try {
+    const [rReglas, rExc] = await Promise.all([
+      axios.get(`/api/profesionales/${profesionalId}/disponibilidad/reglas`),
+      axios.get(`/api/profesionales/${profesionalId}/disponibilidad/excepciones`),
+    ])
+    reglas.value     = rReglas.data
+    excepciones.value = rExc.data
+  } finally {
+    cargando.value = false
+  }
+}
+
+// ── Reglas ────────────────────────────────────────────────────────────────────
+function abrirFormRegla(regla = null) {
+  modalRegla.value = {
+    abierto: true,
+    regla,
+    enviando: false,
+    error: '',
+    form: regla
+      ? { dia_semana: regla.dia_semana, hora_inicio: regla.hora_inicio, hora_fin: regla.hora_fin, buffer_antes_minutos: regla.buffer_antes_minutos ?? 0, buffer_despues_minutos: regla.buffer_despues_minutos ?? 0 }
+      : reglaPorDefecto(),
+  }
+}
+
+function cerrarModalRegla() { modalRegla.value.abierto = false }
+
+async function guardarRegla() {
+  modalRegla.value.error    = ''
+  modalRegla.value.enviando = true
+  try {
+    if (modalRegla.value.regla) {
+      const { data } = await axios.put(
+        `/api/profesionales/${profesionalId}/disponibilidad/reglas/${modalRegla.value.regla.id}`,
+        modalRegla.value.form
+      )
+      const idx = reglas.value.findIndex(r => r.id === data.id)
+      if (idx !== -1) reglas.value[idx] = data
+    } else {
+      const { data } = await axios.post(
+        `/api/profesionales/${profesionalId}/disponibilidad/reglas`,
+        modalRegla.value.form
+      )
+      reglas.value.push(data)
+    }
+    cerrarModalRegla()
+  } catch (e) {
+    modalRegla.value.error = e.response?.data?.message || 'Error al guardar la regla.'
+  } finally {
+    modalRegla.value.enviando = false
+  }
+}
+
+async function eliminarRegla(id) {
+  if (!confirm('¿Eliminar esta regla de horario?')) return
+  await axios.delete(`/api/profesionales/${profesionalId}/disponibilidad/reglas/${id}`)
+  reglas.value = reglas.value.filter(r => r.id !== id)
+}
+
+// ── Excepciones ───────────────────────────────────────────────────────────────
+function abrirFormExcepcion() {
+  modalExc.value = { abierto: true, enviando: false, error: '', form: excepcionPorDefecto() }
+}
+
+function cerrarModalExc() { modalExc.value.abierto = false }
+
+async function guardarExcepcion() {
+  modalExc.value.error    = ''
+  modalExc.value.enviando = true
+  try {
+    const { data } = await axios.post(
+      `/api/profesionales/${profesionalId}/disponibilidad/excepciones`,
+      modalExc.value.form
+    )
+    const idx = excepciones.value.findIndex(e => e.id === data.id)
+    if (idx !== -1) excepciones.value[idx] = data
+    else excepciones.value.push(data)
+    excepciones.value.sort((a, b) => a.fecha.localeCompare(b.fecha))
+    cerrarModalExc()
+  } catch (e) {
+    modalExc.value.error = e.response?.data?.message || 'Error al guardar la excepción.'
+  } finally {
+    modalExc.value.enviando = false
+  }
+}
+
+onMounted(cargarDatos)
+</script>
+
 <style scoped>
-.disponibilidad-info {
+.dispon-seccion {
   background: #fff;
-  border: 1px solid var(--color-borde);
+  border: 1px solid var(--color-borde-suave);
   border-radius: calc(var(--radio-borde) * 1.5);
-  padding: 3rem 2.5rem;
-  max-width: 640px;
+  padding: 1.5rem;
+  margin-bottom: 1.75rem;
   box-shadow: var(--sombra);
 }
-.disponibilidad-info__icono { font-size: 3rem; margin-bottom: 1rem; }
-.disponibilidad-info h2  { font-size: 1.375rem; margin-bottom: 0.75rem; color: var(--color-texto); }
-.disponibilidad-info > p { color: var(--color-texto-suave); margin-bottom: 2rem; line-height: 1.6; }
-.disponibilidad-pasos {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-  margin-bottom: 2rem;
+.dispon-seccion__cabecera {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 1rem; margin-bottom: 1.25rem; flex-wrap: wrap;
 }
-.disponibilidad-paso {
-  display: flex;
-  align-items: flex-start;
-  gap: 1rem;
-}
-.disponibilidad-paso__numero {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: var(--color-primario);
-  color: #fff;
-  font-weight: 700;
-  font-size: 0.875rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  margin-top: 2px;
-}
-.disponibilidad-paso strong { display: block; font-size: 0.9375rem; color: var(--color-texto-medio); margin-bottom: 0.125rem; }
-.disponibilidad-paso p { font-size: 0.875rem; color: var(--color-texto-suave); margin: 0; }
-.disponibilidad-pronto {
-  font-size: 0.9rem;
-  color: var(--color-primario);
-  font-weight: 500;
-  background: var(--color-primario-claro);
-  padding: 0.625rem 1rem;
-  border-radius: var(--radio-borde);
-  margin-bottom: 0;
-}
+.dispon-seccion__titulo { font-size: 1rem; font-weight: 700; margin-bottom: .2rem; }
+.dispon-seccion__desc   { font-size: .875rem; color: var(--color-texto-suave); margin: 0; }
+
+.tabla-wrapper { overflow-x: auto; }
+.tabla { width: 100%; border-collapse: collapse; font-size: .875rem; }
+.tabla th { text-align: left; font-size: .75rem; text-transform: uppercase; letter-spacing: .05em; color: var(--color-texto-suave); padding: .5rem .75rem; border-bottom: 2px solid var(--color-borde-suave); }
+.tabla td { padding: .625rem .75rem; border-bottom: 1px solid var(--color-borde-suave); vertical-align: middle; }
+.tabla tbody tr:last-child td { border-bottom: none; }
+.tabla tbody tr:hover { background: var(--color-fondo); }
+.tabla__acciones { display: flex; gap: .5rem; }
+
+.btn-icono { background: none; border: none; cursor: pointer; font-size: 1rem; padding: .25rem; border-radius: .25rem; transition: background .15s; }
+.btn-icono:hover { background: var(--color-fondo); }
+.btn-icono--peligro:hover { background: #fee2e2; }
+
+.estado-vacio-inline { padding: 1.5rem; text-align: center; color: var(--color-texto-suave); font-size: .9rem; }
+
+.boton-sm { padding: .4rem .875rem; font-size: .875rem; }
+
+.chip-verde { display: inline-block; padding: .125rem .625rem; background: #dcfce7; color: #166534; border-radius: 9999px; font-size: .75rem; font-weight: 600; }
+.chip-rojo  { display: inline-block; padding: .125rem .625rem; background: #fee2e2; color: #991b1b; border-radius: 9999px; font-size: .75rem; font-weight: 600; }
+
+.dispon-fila-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+@media (max-width: 480px) { .dispon-fila-2 { grid-template-columns: 1fr; } }
 </style>
