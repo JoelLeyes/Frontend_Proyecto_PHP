@@ -162,10 +162,20 @@
           <!-- Modalidad -->
           <div class="campo" style="margin-top:1rem">
             <label>Modalidad</label>
-            <select v-model="modal.modalidad">
-              <option value="remota">Remota (videollamada)</option>
-              <option value="presencial">Presencial</option>
-            </select>
+            <template v-if="modal.servicio?.modalidad === 'hibrida'">
+              <select v-model="modal.modalidad">
+                <option value="presencial">Presencial</option>
+                <option value="remota">Remota (videollamada)</option>
+              </select>
+            </template>
+            <template v-else>
+              <input
+                :value="modal.servicio?.modalidad === 'remota' ? 'Remota (videollamada)' : 'Presencial'"
+                disabled
+                class="campo-deshabilitado"
+              />
+              <small class="campo-ayuda">Este servicio es solo {{ modal.servicio?.modalidad }}.</small>
+            </template>
           </div>
 
           <!-- Usar paquete (si el cliente tiene paquetes activos para este servicio) -->
@@ -309,9 +319,10 @@ async function abrirReserva(servicio) {
     enrutador.push({ name: 'iniciar-sesion' })
     return
   }
+  const modalidadInicial = servicio.modalidad === 'hibrida' ? 'presencial' : (servicio.modalidad || 'presencial')
   modal.value = {
     abierto: true, servicio, fecha: '', slots: [],
-    slotSeleccionado: null, modalidad: servicio.modalidad || 'remota',
+    slotSeleccionado: null, modalidad: modalidadInicial,
     notas: '', paqueteClienteId: null,
     cargandoSlots: false, enviando: false, error: '', exito: '',
   }
@@ -501,6 +512,9 @@ onMounted(cargarDatos)
 .compra-resumen__precio   { font-size: 1.5rem; font-weight: 800; color: var(--color-primario); }
 .compra-resumen__desc     { font-size: .875rem; color: var(--color-texto-suave); margin-bottom: .375rem; }
 .compra-resumen__por-sesion { font-size: .8125rem; color: var(--color-texto-suave); font-weight: 500; }
+
+/* Campo deshabilitado en modal */
+.campo-deshabilitado { background: var(--color-fondo); color: var(--color-texto-suave); cursor: not-allowed; }
 
 /* Slots */
 .slots-titulo { font-size: .8125rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--color-texto-suave); margin-bottom: .75rem; }

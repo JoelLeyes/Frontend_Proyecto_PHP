@@ -41,7 +41,10 @@
             </div>
             <div class="campo">
               <label>Teléfono</label>
-              <input v-model="formulario.telefono" placeholder="Ej: +598 99 123 456" />
+              <input v-model="formulario.telefono" type="tel"
+                pattern="[+]?[0-9\s\-()+]{6,20}"
+                placeholder="Ej: +598 99 123 456"
+                title="Solo números, espacios, guiones y paréntesis. Ej: +598 99 123 456" />
             </div>
             <div class="campo">
               <label>Email</label>
