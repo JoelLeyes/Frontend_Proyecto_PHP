@@ -17,6 +17,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Validate AWS secrets
+        shell: bash
+        run: |
+          if [ -z "${{ secrets.AWS_ACCESS_KEY_ID }}" ] || [ -z "${{ secrets.AWS_SECRET_ACCESS_KEY }}" ]; then
+            echo "Missing GitHub Actions secrets in this repo: AWS_ACCESS_KEY_ID and/or AWS_SECRET_ACCESS_KEY"
+            echo "Go to: Settings → Secrets and variables → Actions → New repository secret"
+            exit 1
+          fi
+          if [ -z "${{ secrets.AWS_SESSION_TOKEN }}" ]; then
+            echo "AWS_SESSION_TOKEN is empty/missing. If you're using temporary AWS creds (VocLabs/STS), you must set it."
+            echo "If you're using long-lived IAM access keys, you can ignore this warning."
+          fi
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
