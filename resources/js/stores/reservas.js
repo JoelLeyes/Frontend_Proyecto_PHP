@@ -35,5 +35,19 @@ export const useReservasStore = defineStore('reservas', () => {
         return data
     }
 
-    return { reservas, paginacion, cargando, obtenerReservas, crearReserva, cancelarReserva }
+    async function confirmarReserva(id) {
+        const { data } = await axios.post(`/api/reservas/${id}/confirmar`)
+        const indice = reservas.value.findIndex(r => r.id === id)
+        if (indice !== -1) reservas.value[indice] = data
+        return data
+    }
+
+    async function reprogramarReserva(id, fechaHora) {
+        const { data } = await axios.patch(`/api/reservas/${id}/reprogramar`, { fecha_hora: fechaHora })
+        const indice = reservas.value.findIndex(r => r.id === id)
+        if (indice !== -1) reservas.value[indice] = data
+        return data
+    }
+
+    return { reservas, paginacion, cargando, obtenerReservas, crearReserva, cancelarReserva, confirmarReserva, reprogramarReserva }
 })

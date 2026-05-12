@@ -27,28 +27,70 @@
     <div class="detalle-profesional__tabs">
       <button
         :class="['detalle-profesional__tab', tabActivo === 'servicios' && 'detalle-profesional__tab--activo']"
-        @click="tabActivo = 'servicios'"
-      >💼 Servicios ({{ profesional.servicios?.length ?? 0 }})</button>
+        @click="tabActivo = 'servicios'">
+        💼 Servicios ({{ profesional.servicios?.length ?? 0 }})
+      </button>
       <button
         :class="['detalle-profesional__tab', tabActivo === 'resenas' && 'detalle-profesional__tab--activo']"
-        @click="tabActivo = 'resenas'"
-      >⭐ Reseñas ({{ resenas.length }})</button>
+        @click="tabActivo = 'resenas'">
+        ⭐ Reseñas ({{ resenas.length }})
+      </button>
     </div>
 
     <!-- Tab Servicios -->
     <div v-if="tabActivo === 'servicios'">
       <div v-if="profesional.servicios?.length" class="grilla-servicios">
-        <div v-for="servicio in profesional.servicios" :key="servicio.id" class="tarjeta-servicio">
-          <div class="tarjeta-servicio__info">
+        <div v-for="servicio in profesional.servicios" :key="servicio.id" class="servicio-det">
+
+          <!-- Info del servicio -->
+          <div class="servicio-det__info">
             <p class="tarjeta-servicio__nombre">{{ servicio.nombre }}</p>
             <p class="tarjeta-servicio__descripcion">{{ servicio.descripcion }}</p>
             <div class="tarjeta-servicio__meta">
               <span class="tarjeta-servicio__precio">${{ servicio.precio }}</span>
               <span class="tarjeta-servicio__duracion">⏱ {{ servicio.duracion_minutos }} min</span>
-              <span class="tarjeta-servicio__duracion">{{ servicio.modalidad }}</span>
+              <span class="tarjeta-servicio__duracion" style="text-transform:capitalize">{{ servicio.modalidad }}</span>
             </div>
           </div>
-          <button class="boton-principal" @click="abrirReserva(servicio)">Reservar</button>
+
+          <!-- Acciones del servicio -->
+          <div class="servicio-det__acciones">
+            <button class="boton-principal" @click="abrirReserva(servicio)">Reservar</button>
+            <button class="boton-secundario boton-paquetes"
+              @click="togglePaquetes(servicio)">
+              📦 {{ expandidosPaquetes.has(servicio.id) ? 'Ocultar paquetes' : 'Ver paquetes' }}
+            </button>
+          </div>
+
+          <!-- Sección paquetes del servicio -->
+          <div v-if="expandidosPaquetes.has(servicio.id)" class="paquetes-disponibles">
+            <div v-if="cargandoPaquetes.has(servicio.id)" class="cargando" style="padding:.75rem">
+              Cargando paquetes...
+            </div>
+            <template v-else>
+              <div v-if="paquetesPorServicio[servicio.id]?.length" class="paquetes-lista">
+                <p class="paquetes-lista__titulo">Paquetes disponibles</p>
+                <div v-for="pq in paquetesPorServicio[servicio.id]" :key="pq.id" class="paquete-item">
+                  <div class="paquete-item__info">
+                    <strong>{{ pq.nombre }}</strong>
+                    <span class="paquete-item__sesiones">{{ pq.cantidad_sesiones }} sesiones</span>
+                    <span class="paquete-item__precio">${{ pq.precio }}</span>
+                    <span class="paquete-item__ahorro">
+                      (${{ (pq.precio / pq.cantidad_sesiones).toFixed(2) }}/sesión)
+                    </span>
+                    <p v-if="pq.descripcion" class="paquete-item__desc">{{ pq.descripcion }}</p>
+                  </div>
+                  <button class="boton-principal boton-sm" @click="abrirCompra(pq)">
+                    Comprar paquete
+                  </button>
+                </div>
+              </div>
+              <div v-else class="paquetes-vacio">
+                Este servicio no tiene paquetes disponibles.
+              </div>
+            </template>
+          </div>
+
         </div>
       </div>
       <div v-else class="estado-vacio">
@@ -77,8 +119,7 @@
   </div>
   <div v-else class="cargando">Cargando perfil...</div>
 
-  <!-- ===== Modal de reserva ===== -->
-
+  <!-- ══ Modal de reserva ══ -->
   <Teleport to="body">
     <div v-if="modal.abierto" class="modal-overlay" @click.self="cerrarModal">
       <div class="modal" role="dialog" aria-modal="true">
@@ -92,28 +133,23 @@
         </div>
 
         <div class="modal__cuerpo">
-          <!-- Paso 1: elegir fecha -->
+          <!-- Fecha -->
           <div class="campo">
             <label>Fecha</label>
             <input type="date" v-model="modal.fecha" :min="hoy" @change="cargarSlots" />
           </div>
 
-          <!-- Cargando slots -->
           <div v-if="modal.cargandoSlots" class="cargando" style="padding:1.5rem">
             Buscando horarios disponibles...
           </div>
 
-          <!-- Slots disponibles -->
           <template v-else-if="modal.fecha">
             <div v-if="modal.slots.length">
               <p class="slots-titulo">Horarios disponibles</p>
               <div class="slots-grilla">
-                <button
-                  v-for="slot in modal.slots"
-                  :key="slot.inicio"
+                <button v-for="slot in modal.slots" :key="slot.inicio"
                   :class="['slot-btn', modal.slotSeleccionado === slot.inicio && 'slot-btn--activo']"
-                  @click="modal.slotSeleccionado = slot.inicio"
-                >
+                  @click="modal.slotSeleccionado = slot.inicio">
                   {{ slot.inicio.slice(11, 16) }}
                 </button>
               </div>
@@ -132,7 +168,28 @@
             </select>
           </div>
 
-          <!-- Notas opcionales -->
+          <!-- Usar paquete (si el cliente tiene paquetes activos para este servicio) -->
+          <div v-if="auth.estaLogueado && auth.usuario?.rol === 'cliente' && paquetesParaServicio.length" class="campo">
+            <label>Usar paquete de sesiones</label>
+            <div class="paquetes-seleccion">
+              <button
+                :class="['paquete-sel-btn', modal.paqueteClienteId === null && 'paquete-sel-btn--activo']"
+                @click="modal.paqueteClienteId = null">
+                Sin paquete (sesión individual)
+              </button>
+              <button v-for="p in paquetesParaServicio" :key="p.id"
+                :class="['paquete-sel-btn', modal.paqueteClienteId === p.id && 'paquete-sel-btn--activo']"
+                @click="modal.paqueteClienteId = p.id">
+                {{ p.paquete_servicio?.nombre }}
+                <span class="paquete-sel-btn__resto">
+                  ({{ p.sesiones_total - p.sesiones_usadas }} restantes)
+                </span>
+              </button>
+            </div>
+            <small class="campo-ayuda">Si usás un paquete, se descuenta una sesión al confirmar.</small>
+          </div>
+
+          <!-- Notas -->
           <div class="campo">
             <label>Notas para el profesional <span style="font-weight:400;text-transform:none">(opcional)</span></label>
             <textarea v-model="modal.notas" placeholder="Ej: primera consulta, tengo alergia a..." rows="2"></textarea>
@@ -144,23 +201,56 @@
 
         <div class="modal__pie">
           <button class="boton-secundario" @click="cerrarModal">Cancelar</button>
-          <button
-            class="boton-principal"
+          <button class="boton-principal"
             :disabled="!modal.slotSeleccionado || modal.enviando"
-            @click="confirmarReserva"
-          >
+            @click="confirmarReserva">
             {{ modal.enviando ? 'Reservando...' : 'Confirmar reserva' }}
           </button>
         </div>
-
       </div>
     </div>
   </Teleport>
+
+  <!-- ══ Modal comprar paquete ══ -->
+  <Teleport to="body">
+    <div v-if="modalCompra.abierto" class="modal-overlay" @click.self="modalCompra.abierto = false">
+      <div class="modal">
+        <div class="modal__cabecera">
+          <h3 class="modal__titulo">Confirmar compra</h3>
+          <button class="modal__cerrar" @click="modalCompra.abierto = false">✕</button>
+        </div>
+        <div class="modal__cuerpo">
+          <div class="compra-resumen">
+            <p class="compra-resumen__nombre">{{ modalCompra.paquete?.nombre }}</p>
+            <div class="compra-resumen__detalle">
+              <span>{{ modalCompra.paquete?.cantidad_sesiones }} sesiones</span>
+              <span class="compra-resumen__precio">${{ modalCompra.paquete?.precio }}</span>
+            </div>
+            <p v-if="modalCompra.paquete?.descripcion" class="compra-resumen__desc">
+              {{ modalCompra.paquete.descripcion }}
+            </p>
+            <p class="compra-resumen__por-sesion">
+              Equivale a ${{ modalCompra.paquete ? (modalCompra.paquete.precio / modalCompra.paquete.cantidad_sesiones).toFixed(2) : '' }} por sesión
+            </p>
+          </div>
+          <p v-if="modalCompra.error" class="alerta alerta--error">{{ modalCompra.error }}</p>
+          <p v-if="modalCompra.exito" class="alerta alerta--exito">{{ modalCompra.exito }}</p>
+        </div>
+        <div class="modal__pie">
+          <button class="boton-secundario" @click="modalCompra.abierto = false">Cancelar</button>
+          <button class="boton-principal" :disabled="modalCompra.enviando" @click="confirmarCompra">
+            {{ modalCompra.enviando ? 'Procesando...' : 'Confirmar compra' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </Teleport>
+
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, reactive, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import axios from 'axios'
@@ -179,59 +269,70 @@ const iniciales = computed(() => {
   return nombre.split(' ').slice(0, 2).map(p => p[0]).join('').toUpperCase() || '?'
 })
 
-// ── Estado del modal ──────────────────────────────────────────────────────────
-const modal = ref({
-  abierto:          false,
-  servicio:         null,
-  fecha:            '',
-  slots:            [],
-  slotSeleccionado: null,
-  modalidad:        'remota',
-  notas:            '',
-  cargandoSlots:    false,
-  enviando:         false,
-  error:            '',
-  exito:            '',
-})
+// ── Paquetes del servicio (los que ofrece el profesional) ─────────────────────
+const expandidosPaquetes  = reactive(new Set())
+const paquetesPorServicio = reactive({})
+const cargandoPaquetes    = reactive(new Set())
 
-async function cargarDatos() {
-  const [resProfesional, resResenas] = await Promise.all([
-    axios.get(`/api/profesionales/${ruta.params.id}`),
-    axios.get(`/api/profesionales/${ruta.params.id}/resenas`),
-  ])
-  profesional.value = resProfesional.data
-  resenas.value     = resResenas.data.data
+// Paquetes del cliente para el servicio actual (para usarlos en la reserva)
+const paquetesParaServicio = ref([])
+
+async function togglePaquetes(servicio) {
+  if (expandidosPaquetes.has(servicio.id)) {
+    expandidosPaquetes.delete(servicio.id)
+    return
+  }
+  expandidosPaquetes.add(servicio.id)
+  if (!paquetesPorServicio[servicio.id]) {
+    cargandoPaquetes.add(servicio.id)
+    try {
+      const { data } = await axios.get(
+        `/api/profesionales/${ruta.params.id}/servicios/${servicio.id}/paquetes`
+      )
+      paquetesPorServicio[servicio.id] = data
+    } finally {
+      cargandoPaquetes.delete(servicio.id)
+    }
+  }
 }
 
-function abrirReserva(servicio) {
+// ── Modal de reserva ──────────────────────────────────────────────────────────
+const modal = ref({
+  abierto: false, servicio: null, fecha: '', slots: [],
+  slotSeleccionado: null, modalidad: 'remota', notas: '',
+  paqueteClienteId: null,
+  cargandoSlots: false, enviando: false, error: '', exito: '',
+})
+
+async function abrirReserva(servicio) {
   if (!auth.estaLogueado) {
     enrutador.push({ name: 'iniciar-sesion' })
     return
   }
   modal.value = {
-    abierto:          true,
-    servicio,
-    fecha:            '',
-    slots:            [],
-    slotSeleccionado: null,
-    modalidad:        servicio.modalidad || 'remota',
-    notas:            '',
-    cargandoSlots:    false,
-    enviando:         false,
-    error:            '',
-    exito:            '',
+    abierto: true, servicio, fecha: '', slots: [],
+    slotSeleccionado: null, modalidad: servicio.modalidad || 'remota',
+    notas: '', paqueteClienteId: null,
+    cargandoSlots: false, enviando: false, error: '', exito: '',
+  }
+
+  // Cargar paquetes activos del cliente para este servicio
+  paquetesParaServicio.value = []
+  if (auth.usuario?.rol === 'cliente') {
+    try {
+      const { data } = await axios.get('/api/mis-paquetes', {
+        params: { servicio_id: servicio.id, estado: 'activo' }
+      })
+      paquetesParaServicio.value = data
+    } catch { /* silencioso */ }
   }
 }
 
-function cerrarModal() {
-  modal.value.abierto = false
-}
+function cerrarModal() { modal.value.abierto = false }
 
 async function cargarSlots() {
   if (!modal.value.fecha) return
-  modal.value.slots            = []
-  modal.value.slotSeleccionado = null
-  modal.value.cargandoSlots    = true
+  modal.value.slots = []; modal.value.slotSeleccionado = null; modal.value.cargandoSlots = true
   try {
     const { data } = await axios.get(
       `/api/profesionales/${ruta.params.id}/disponibilidad/horarios`,
@@ -246,15 +347,14 @@ async function cargarSlots() {
 }
 
 async function confirmarReserva() {
-  modal.value.error   = ''
-  modal.value.exito   = ''
-  modal.value.enviando = true
+  modal.value.error = ''; modal.value.exito = ''; modal.value.enviando = true
   try {
     await axios.post('/api/reservas', {
-      servicio_id: modal.value.servicio.id,
-      fecha_hora:  modal.value.slotSeleccionado,
-      modalidad:   modal.value.modalidad,
-      notas:       modal.value.notas || null,
+      servicio_id:        modal.value.servicio.id,
+      fecha_hora:         modal.value.slotSeleccionado,
+      modalidad:          modal.value.modalidad,
+      notas:              modal.value.notas || null,
+      paquete_cliente_id: modal.value.paqueteClienteId || null,
     })
     modal.value.exito = '✅ ¡Reserva creada! Te redirigimos a tus reservas...'
     setTimeout(() => {
@@ -268,15 +368,53 @@ async function confirmarReserva() {
   }
 }
 
+// ── Modal compra de paquete ───────────────────────────────────────────────────
+const modalCompra = ref({
+  abierto: false, paquete: null, enviando: false, error: '', exito: '',
+})
+
+function abrirCompra(paquete) {
+  if (!auth.estaLogueado) {
+    enrutador.push({ name: 'iniciar-sesion' })
+    return
+  }
+  if (auth.usuario?.rol !== 'cliente') {
+    alert('Solo los clientes pueden adquirir paquetes.')
+    return
+  }
+  modalCompra.value = { abierto: true, paquete, enviando: false, error: '', exito: '' }
+}
+
+async function confirmarCompra() {
+  modalCompra.value.error = ''; modalCompra.value.enviando = true
+  try {
+    await axios.post(`/api/paquetes-servicio/${modalCompra.value.paquete.id}/comprar`)
+    modalCompra.value.exito = '✅ ¡Paquete adquirido! Lo encontrás en "Mis paquetes".'
+    setTimeout(() => { modalCompra.value.abierto = false }, 2000)
+  } catch (e) {
+    modalCompra.value.error = e.response?.data?.error || 'No se pudo procesar la compra.'
+  } finally {
+    modalCompra.value.enviando = false
+  }
+}
+
+// ── Carga inicial ─────────────────────────────────────────────────────────────
+async function cargarDatos() {
+  const [resProfesional, resResenas] = await Promise.all([
+    axios.get(`/api/profesionales/${ruta.params.id}`),
+    axios.get(`/api/profesionales/${ruta.params.id}/resenas`),
+  ])
+  profesional.value = resProfesional.data
+  resenas.value     = resResenas.data.data
+}
+
 onMounted(cargarDatos)
 </script>
 
 <style scoped>
 .detalle-avatar {
-  width: 110px; height: 110px;
-  border-radius: 50%; overflow: hidden; flex-shrink: 0;
-  border: 3px solid var(--color-primario-claro);
-  box-shadow: var(--sombra-media);
+  width: 110px; height: 110px; border-radius: 50%; overflow: hidden; flex-shrink: 0;
+  border: 3px solid var(--color-primario-claro); box-shadow: var(--sombra-media);
 }
 .detalle-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .detalle-avatar__defecto {
@@ -291,7 +429,7 @@ onMounted(cargarDatos)
 .detalle-info__meta    { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; margin-bottom: .875rem; }
 .detalle-rating        { font-size: .9375rem; font-weight: 600; color: var(--color-advertencia); }
 .detalle-rating__total { font-size: .8125rem; color: var(--color-texto-suave); font-weight: 400; }
-.detalle-info__bio     { font-size: .9375rem; color: var(--color-texto-suave); line-height: 1.6; max-width: 600px; margin-bottom: 0; }
+.detalle-info__bio     { font-size: .9375rem; color: var(--color-texto-suave); line-height: 1.6; max-width: 600px; }
 .modalidad-chip {
   display: inline-block; padding: .2rem .75rem;
   background: var(--color-primario-claro); color: var(--color-primario-oscuro);
@@ -300,50 +438,79 @@ onMounted(cargarDatos)
 .estado-vacio { text-align: center; padding: 3rem; color: var(--color-texto-suave); }
 .estado-vacio__icono { font-size: 2.5rem; margin-bottom: .75rem; }
 
-/* ── Modal ── */
-.modal-overlay {
-  position: fixed; inset: 0; z-index: 1000;
-  background: rgba(0,0,0,.45); backdrop-filter: blur(3px);
-  display: flex; align-items: center; justify-content: center;
-  padding: 1rem;
+/* Servicio con paquetes */
+.servicio-det {
+  background: #fff;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-borde);
+  padding: 1rem 1.25rem;
+  box-shadow: var(--sombra);
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
 }
-.modal {
-  background: #fff; border-radius: calc(var(--radio-borde) * 1.5);
-  width: 100%; max-width: 500px;
-  box-shadow: 0 20px 40px rgba(0,0,0,.2);
-  display: flex; flex-direction: column;
-  max-height: 90vh; overflow: hidden;
+.servicio-det__info    { flex: 1; }
+.servicio-det__acciones { display: flex; gap: .625rem; flex-wrap: wrap; }
+.boton-paquetes { font-size: .875rem; padding: .5rem 1rem; }
+.boton-sm { padding: .4rem .875rem; font-size: .875rem; }
+
+/* Sección paquetes disponibles */
+.paquetes-disponibles {
+  border-top: 1px solid var(--color-borde-suave);
+  padding-top: .875rem;
 }
-.modal__cabecera {
-  display: flex; align-items: flex-start; justify-content: space-between;
-  padding: 1.375rem 1.5rem 1rem;
-  border-bottom: 1px solid var(--color-borde-suave);
+.paquetes-lista__titulo {
+  font-size: .75rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .05em; color: var(--color-texto-suave); margin-bottom: .75rem;
 }
-.modal__titulo    { font-size: 1.125rem; font-weight: 700; margin-bottom: .125rem; }
-.modal__subtitulo { font-size: .875rem; color: var(--color-texto-suave); margin: 0; }
-.modal__cerrar {
-  background: none; border: none; cursor: pointer; font-size: 1.125rem;
-  color: var(--color-texto-suave); padding: .25rem; border-radius: .25rem;
-  transition: background .15s;
+.paquetes-lista { display: flex; flex-direction: column; gap: .625rem; }
+.paquete-item {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem;
+  padding: .75rem 1rem;
+  background: var(--color-fondo);
+  border: 1px solid var(--color-borde-suave);
+  border-radius: var(--radio-borde);
 }
-.modal__cerrar:hover { background: var(--color-fondo); }
-.modal__cuerpo  { padding: 1.25rem 1.5rem; overflow-y: auto; flex: 1; }
-.modal__pie     { padding: 1rem 1.5rem; border-top: 1px solid var(--color-borde-suave); display: flex; gap: .75rem; justify-content: flex-end; }
+.paquete-item__info { flex: 1; display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+.paquete-item__sesiones { font-size: .8125rem; color: var(--color-texto-suave); }
+.paquete-item__precio   { font-weight: 700; color: var(--color-primario); font-size: .9375rem; }
+.paquete-item__ahorro   { font-size: .75rem; color: var(--color-texto-suave); }
+.paquete-item__desc     { width: 100%; font-size: .8125rem; color: var(--color-texto-suave); margin-top: .1rem; }
+.paquetes-vacio { font-size: .875rem; color: var(--color-texto-suave); padding: .5rem 0; }
+
+/* Selección de paquete en reserva */
+.paquetes-seleccion { display: flex; flex-direction: column; gap: .375rem; }
+.paquete-sel-btn {
+  text-align: left; padding: .625rem .875rem;
+  border: 1.5px solid var(--color-borde-suave); border-radius: var(--radio-borde);
+  background: #fff; cursor: pointer; font-size: .875rem; color: var(--color-texto-medio);
+  transition: border-color .15s; display: flex; align-items: center; gap: .5rem; flex-wrap: wrap;
+}
+.paquete-sel-btn:hover { border-color: var(--color-primario); }
+.paquete-sel-btn--activo { border-color: var(--color-primario); background: var(--color-primario-claro); font-weight: 600; }
+.paquete-sel-btn__resto { font-size: .8125rem; color: var(--color-texto-suave); font-weight: 400; }
+.campo-ayuda { font-size: .75rem; color: var(--color-texto-suave); margin-top: .25rem; display: block; }
+
+/* Resumen de compra */
+.compra-resumen {
+  background: var(--color-fondo); border-radius: var(--radio-borde);
+  padding: 1.125rem; margin-bottom: .75rem;
+}
+.compra-resumen__nombre   { font-size: 1.0625rem; font-weight: 700; margin-bottom: .5rem; }
+.compra-resumen__detalle  { display: flex; align-items: center; justify-content: space-between; margin-bottom: .375rem; font-size: .9375rem; }
+.compra-resumen__precio   { font-size: 1.5rem; font-weight: 800; color: var(--color-primario); }
+.compra-resumen__desc     { font-size: .875rem; color: var(--color-texto-suave); margin-bottom: .375rem; }
+.compra-resumen__por-sesion { font-size: .8125rem; color: var(--color-texto-suave); font-weight: 500; }
 
 /* Slots */
 .slots-titulo { font-size: .8125rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--color-texto-suave); margin-bottom: .75rem; }
 .slots-grilla { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: .25rem; }
 .slot-btn {
-  padding: .45rem .875rem;
-  border: 1.5px solid var(--color-borde-suave);
-  border-radius: var(--radio-borde);
-  background: #fff; font-size: .875rem; font-weight: 500;
+  padding: .45rem .875rem; border: 1.5px solid var(--color-borde-suave);
+  border-radius: var(--radio-borde); background: #fff; font-size: .875rem; font-weight: 500;
   cursor: pointer; transition: border-color .15s, background .15s, color .15s;
   color: var(--color-texto-medio);
 }
 .slot-btn:hover        { border-color: var(--color-primario); color: var(--color-primario); }
-.slot-btn--activo {
-  background: var(--color-primario); border-color: var(--color-primario);
-  color: #fff; font-weight: 600;
-}
+.slot-btn--activo { background: var(--color-primario); border-color: var(--color-primario); color: #fff; font-weight: 600; }
 </style>

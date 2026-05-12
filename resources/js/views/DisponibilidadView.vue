@@ -4,7 +4,12 @@
       <h1 class="layout-panel__titulo-pagina">Mi Disponibilidad</h1>
     </div>
 
-    <div v-if="cargando" class="cargando">Cargando configuración...</div>
+    <div v-if="!profesionalId" class="estado-vacio">
+      <div class="estado-vacio__icono">🔒</div>
+      <p>Esta sección es solo para profesionales.</p>
+    </div>
+
+    <div v-else-if="cargando" class="cargando">Cargando configuración...</div>
 
     <template v-else>
 
@@ -12,10 +17,14 @@
       <section class="dispon-seccion">
         <div class="dispon-seccion__cabecera">
           <div>
-            <h2 class="dispon-seccion__titulo">Reglas de horario</h2>
-            <p class="dispon-seccion__desc">Días y rangos horarios en que atendés.</p>
+            <h2 class="dispon-seccion__titulo">Horarios de atención</h2>
+            <p class="dispon-seccion__desc">
+              Definí los días y rangos horarios en que atendés. Podés agregar varias franjas por día
+              para incluir pausas (por ejemplo: 09:00–13:00 y 14:00–18:00 deja el mediodía libre).
+              Los buffers agregan tiempo automático entre turnos.
+            </p>
           </div>
-          <button class="boton-principal boton-sm" @click="abrirFormRegla()">+ Nueva regla</button>
+          <button class="boton-principal boton-sm" @click="abrirFormRegla()">+ Nueva franja</button>
         </div>
 
         <div v-if="reglas.length" class="tabla-wrapper">
@@ -25,14 +34,14 @@
                 <th>Día</th>
                 <th>Desde</th>
                 <th>Hasta</th>
-                <th>Buffer antes</th>
-                <th>Buffer después</th>
+                <th title="Tiempo libre antes de cada turno">Pausa antes</th>
+                <th title="Tiempo libre después de cada turno">Pausa después</th>
                 <th></th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="regla in reglas" :key="regla.id">
-                <td>{{ DIAS[regla.dia_semana] }}</td>
+              <tr v-for="regla in reglasOrdenadas" :key="regla.id">
+                <td><strong>{{ DIAS[regla.dia_semana] }}</strong></td>
                 <td>{{ regla.hora_inicio }}</td>
                 <td>{{ regla.hora_fin }}</td>
                 <td>{{ regla.buffer_antes_minutos ?? 0 }} min</td>
@@ -46,16 +55,19 @@
           </table>
         </div>
         <div v-else class="estado-vacio-inline">
-          <span>No tenés reglas configuradas.</span>
+          No tenés horarios configurados. Agregá una franja para empezar a recibir reservas.
         </div>
       </section>
 
-      <!-- ═══ EXCEPCIONES ═══ -->
+      <!-- ═══ EXCEPCIONES / FERIADOS ═══ -->
       <section class="dispon-seccion">
         <div class="dispon-seccion__cabecera">
           <div>
-            <h2 class="dispon-seccion__titulo">Excepciones</h2>
-            <p class="dispon-seccion__desc">Días bloqueados por feriado, licencia u otra ausencia.</p>
+            <h2 class="dispon-seccion__titulo">Feriados y excepciones</h2>
+            <p class="dispon-seccion__desc">
+              Bloqueá días puntuales por vacaciones, feriados o cualquier ausencia.
+              También podés habilitar un día extra que normalmente no trabajás.
+            </p>
           </div>
           <button class="boton-principal boton-sm" @click="abrirFormExcepcion()">+ Nueva excepción</button>
         </div>
@@ -63,42 +75,39 @@
         <div v-if="excepciones.length" class="tabla-wrapper">
           <table class="tabla">
             <thead>
-              <tr>
-                <th>Fecha</th>
-                <th>Estado</th>
-                <th>Motivo</th>
-              </tr>
+              <tr><th>Fecha</th><th>Estado</th><th>Motivo</th><th></th></tr>
             </thead>
             <tbody>
               <tr v-for="exc in excepciones" :key="exc.id">
-                <td>{{ exc.fecha }}</td>
+                <td>{{ formatearFecha(exc.fecha) }}</td>
                 <td>
                   <span :class="exc.disponible ? 'chip-verde' : 'chip-rojo'">
-                    {{ exc.disponible ? 'Disponible' : 'Bloqueado' }}
+                    {{ exc.disponible ? 'Disponible extra' : 'Bloqueado' }}
                   </span>
                 </td>
                 <td>{{ exc.motivo || '—' }}</td>
+                <td>
+                  <button class="btn-icono btn-icono--peligro" title="Eliminar" @click="eliminarExcepcion(exc.id)">🗑️</button>
+                </td>
               </tr>
             </tbody>
           </table>
         </div>
         <div v-else class="estado-vacio-inline">
-          <span>No hay excepciones futuras.</span>
+          No hay excepciones futuras registradas.
         </div>
       </section>
 
     </template>
 
-    <!-- ═══ Modal regla ═══ -->
+    <!-- ═══ Modal regla / franja horaria ═══ -->
     <Teleport to="body">
       <div v-if="modalRegla.abierto" class="modal-overlay" @click.self="cerrarModalRegla">
         <div class="modal" role="dialog" aria-modal="true">
 
           <div class="modal__cabecera">
-            <div>
-              <h3 class="modal__titulo">{{ modalRegla.regla ? 'Editar regla' : 'Nueva regla' }}</h3>
-            </div>
-            <button class="modal__cerrar" @click="cerrarModalRegla" aria-label="Cerrar">✕</button>
+            <h3 class="modal__titulo">{{ modalRegla.regla ? 'Editar franja horaria' : 'Nueva franja horaria' }}</h3>
+            <button class="modal__cerrar" @click="cerrarModalRegla">✕</button>
           </div>
 
           <div class="modal__cuerpo">
@@ -118,14 +127,19 @@
                 <input type="time" v-model="modalRegla.form.hora_fin" />
               </div>
             </div>
+            <p class="campo-ayuda" style="margin-top:-.5rem;margin-bottom:1rem">
+              💡 Para agregar una pausa al mediodía, creá dos franjas: mañana y tarde.
+            </p>
             <div class="dispon-fila-2">
               <div class="campo">
-                <label>Buffer antes (min)</label>
-                <input type="number" min="0" v-model.number="modalRegla.form.buffer_antes_minutos" />
+                <label>Pausa antes de cada turno (min)</label>
+                <input type="number" min="0" step="5" v-model.number="modalRegla.form.buffer_antes_minutos" />
+                <small class="campo-ayuda">Tiempo libre antes de que empiece el turno.</small>
               </div>
               <div class="campo">
-                <label>Buffer después (min)</label>
-                <input type="number" min="0" v-model.number="modalRegla.form.buffer_despues_minutos" />
+                <label>Pausa después de cada turno (min)</label>
+                <input type="number" min="0" step="5" v-model.number="modalRegla.form.buffer_despues_minutos" />
+                <small class="campo-ayuda">Tiempo libre al terminar el turno (preparación, traslado, etc.).</small>
               </div>
             </div>
             <p v-if="modalRegla.error" class="alerta alerta--error">{{ modalRegla.error }}</p>
@@ -137,21 +151,18 @@
               {{ modalRegla.enviando ? 'Guardando...' : 'Guardar' }}
             </button>
           </div>
-
         </div>
       </div>
     </Teleport>
 
-    <!-- ═══ Modal excepción ═══ -->
+    <!-- ═══ Modal excepción / feriado ═══ -->
     <Teleport to="body">
       <div v-if="modalExc.abierto" class="modal-overlay" @click.self="cerrarModalExc">
         <div class="modal" role="dialog" aria-modal="true">
 
           <div class="modal__cabecera">
-            <div>
-              <h3 class="modal__titulo">Nueva excepción</h3>
-            </div>
-            <button class="modal__cerrar" @click="cerrarModalExc" aria-label="Cerrar">✕</button>
+            <h3 class="modal__titulo">Nueva excepción</h3>
+            <button class="modal__cerrar" @click="cerrarModalExc">✕</button>
           </div>
 
           <div class="modal__cuerpo">
@@ -160,15 +171,15 @@
               <input type="date" v-model="modalExc.form.fecha" :min="hoy" />
             </div>
             <div class="campo">
-              <label>Estado</label>
+              <label>Tipo de excepción</label>
               <select v-model="modalExc.form.disponible">
-                <option :value="false">Bloqueado (ausencia)</option>
-                <option :value="true">Disponible extra</option>
+                <option :value="false">🔴 Día bloqueado (feriado, vacaciones, ausencia)</option>
+                <option :value="true">🟢 Día habilitado extra (trabajo fuera de mi horario habitual)</option>
               </select>
             </div>
             <div class="campo">
               <label>Motivo <span style="font-weight:400">(opcional)</span></label>
-              <input type="text" v-model="modalExc.form.motivo" placeholder="Ej: Feriado nacional, vacaciones..." />
+              <input type="text" v-model="modalExc.form.motivo" placeholder="Ej: Feriado nacional, vacaciones, capacitación..." />
             </div>
             <p v-if="modalExc.error" class="alerta alerta--error">{{ modalExc.error }}</p>
           </div>
@@ -179,7 +190,6 @@
               {{ modalExc.enviando ? 'Guardando...' : 'Guardar' }}
             </button>
           </div>
-
         </div>
       </div>
     </Teleport>
@@ -188,19 +198,29 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import axios from 'axios'
 
-const auth    = useAuthStore()
-const cargando = ref(true)
-const reglas   = ref([])
+const auth        = useAuthStore()
+const cargando    = ref(true)
+const reglas      = ref([])
 const excepciones = ref([])
-const hoy      = new Date().toISOString().slice(0, 10)
+const hoy         = new Date().toISOString().slice(0, 10)
 
 const DIAS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
 
 const profesionalId = auth.usuario?.profesional?.id
+
+const reglasOrdenadas = computed(() =>
+  [...reglas.value].sort((a, b) => a.dia_semana - b.dia_semana || a.hora_inicio.localeCompare(b.hora_inicio))
+)
+
+function formatearFecha(fecha) {
+  if (!fecha) return '—'
+  const [y, m, d] = (typeof fecha === 'string' ? fecha : fecha.substring(0, 10)).split('-')
+  return `${d}/${m}/${y}`
+}
 
 // ── Estado modales ────────────────────────────────────────────────────────────
 const modalRegla = ref({ abierto: false, regla: null, enviando: false, error: '', form: reglaPorDefecto() })
@@ -231,16 +251,13 @@ async function cargarDatos() {
 // ── Reglas ────────────────────────────────────────────────────────────────────
 function abrirFormRegla(regla = null) {
   modalRegla.value = {
-    abierto: true,
-    regla,
-    enviando: false,
-    error: '',
+    abierto: true, regla, enviando: false, error: '',
     form: regla
-      ? { dia_semana: regla.dia_semana, hora_inicio: regla.hora_inicio, hora_fin: regla.hora_fin, buffer_antes_minutos: regla.buffer_antes_minutos ?? 0, buffer_despues_minutos: regla.buffer_despues_minutos ?? 0 }
+      ? { dia_semana: regla.dia_semana, hora_inicio: regla.hora_inicio, hora_fin: regla.hora_fin,
+          buffer_antes_minutos: regla.buffer_antes_minutos ?? 0, buffer_despues_minutos: regla.buffer_despues_minutos ?? 0 }
       : reglaPorDefecto(),
   }
 }
-
 function cerrarModalRegla() { modalRegla.value.abierto = false }
 
 async function guardarRegla() {
@@ -263,14 +280,14 @@ async function guardarRegla() {
     }
     cerrarModalRegla()
   } catch (e) {
-    modalRegla.value.error = e.response?.data?.message || 'Error al guardar la regla.'
+    modalRegla.value.error = e.response?.data?.message || 'Error al guardar la franja.'
   } finally {
     modalRegla.value.enviando = false
   }
 }
 
 async function eliminarRegla(id) {
-  if (!confirm('¿Eliminar esta regla de horario?')) return
+  if (!confirm('¿Eliminar esta franja horaria?')) return
   await axios.delete(`/api/profesionales/${profesionalId}/disponibilidad/reglas/${id}`)
   reglas.value = reglas.value.filter(r => r.id !== id)
 }
@@ -279,7 +296,6 @@ async function eliminarRegla(id) {
 function abrirFormExcepcion() {
   modalExc.value = { abierto: true, enviando: false, error: '', form: excepcionPorDefecto() }
 }
-
 function cerrarModalExc() { modalExc.value.abierto = false }
 
 async function guardarExcepcion() {
@@ -293,13 +309,23 @@ async function guardarExcepcion() {
     const idx = excepciones.value.findIndex(e => e.id === data.id)
     if (idx !== -1) excepciones.value[idx] = data
     else excepciones.value.push(data)
-    excepciones.value.sort((a, b) => a.fecha.localeCompare(b.fecha))
+    excepciones.value.sort((a, b) => {
+      const fa = typeof a.fecha === 'string' ? a.fecha : a.fecha.substring(0, 10)
+      const fb = typeof b.fecha === 'string' ? b.fecha : b.fecha.substring(0, 10)
+      return fa.localeCompare(fb)
+    })
     cerrarModalExc()
   } catch (e) {
     modalExc.value.error = e.response?.data?.message || 'Error al guardar la excepción.'
   } finally {
     modalExc.value.enviando = false
   }
+}
+
+async function eliminarExcepcion(id) {
+  if (!confirm('¿Eliminar esta excepción?')) return
+  await axios.delete(`/api/profesionales/${profesionalId}/disponibilidad/excepciones/${id}`)
+  excepciones.value = excepciones.value.filter(e => e.id !== id)
 }
 
 onMounted(cargarDatos)
@@ -318,8 +344,8 @@ onMounted(cargarDatos)
   display: flex; align-items: flex-start; justify-content: space-between;
   gap: 1rem; margin-bottom: 1.25rem; flex-wrap: wrap;
 }
-.dispon-seccion__titulo { font-size: 1rem; font-weight: 700; margin-bottom: .2rem; }
-.dispon-seccion__desc   { font-size: .875rem; color: var(--color-texto-suave); margin: 0; }
+.dispon-seccion__titulo { font-size: 1rem; font-weight: 700; margin-bottom: .25rem; }
+.dispon-seccion__desc   { font-size: .875rem; color: var(--color-texto-suave); margin: 0; line-height: 1.5; max-width: 560px; }
 
 .tabla-wrapper { overflow-x: auto; }
 .tabla { width: 100%; border-collapse: collapse; font-size: .875rem; }
@@ -334,6 +360,8 @@ onMounted(cargarDatos)
 .btn-icono--peligro:hover { background: #fee2e2; }
 
 .estado-vacio-inline { padding: 1.5rem; text-align: center; color: var(--color-texto-suave); font-size: .9rem; }
+.estado-vacio { text-align: center; padding: 4rem; color: var(--color-texto-suave); }
+.estado-vacio__icono { font-size: 2.5rem; margin-bottom: .75rem; }
 
 .boton-sm { padding: .4rem .875rem; font-size: .875rem; }
 
@@ -341,5 +369,7 @@ onMounted(cargarDatos)
 .chip-rojo  { display: inline-block; padding: .125rem .625rem; background: #fee2e2; color: #991b1b; border-radius: 9999px; font-size: .75rem; font-weight: 600; }
 
 .dispon-fila-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.campo-ayuda { font-size: .75rem; color: var(--color-texto-suave); margin-top: .25rem; display: block; }
+
 @media (max-width: 480px) { .dispon-fila-2 { grid-template-columns: 1fr; } }
 </style>

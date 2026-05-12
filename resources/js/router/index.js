@@ -40,6 +40,12 @@ const rutas = [
                 meta: { rol: 'profesional' },
             },
             {
+                path: 'paquetes',
+                name: 'mis-paquetes',
+                component: () => import('@/views/PaquetesView.vue'),
+                meta: { rol: 'cliente' },
+            },
+            {
                 path: 'admin',
                 name: 'panel-admin',
                 component: () => import('@/views/AdminView.vue'),
