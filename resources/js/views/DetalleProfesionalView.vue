@@ -15,6 +15,7 @@
         <div class="detalle-info__meta">
           <span v-if="profesional.total_calificaciones > 0" class="detalle-rating">
             ⭐ {{ profesional.promedio_calificacion }}
+            <span class="detalle-rating__clasificacion">{{ clasificacionPromedio(profesional.promedio_calificacion) }}</span>
             <span class="detalle-rating__total">({{ profesional.total_calificaciones }} reseñas)</span>
           </span>
           <span class="modalidad-chip">{{ profesional.modalidad }}</span>
@@ -279,6 +280,14 @@ const iniciales = computed(() => {
   return nombre.split(' ').slice(0, 2).map(p => p[0]).join('').toUpperCase() || '?'
 })
 
+function clasificacionPromedio(promedio) {
+  if (promedio >= 4.6) return 'Excelente'
+  if (promedio >= 4.1) return 'Muy bueno'
+  if (promedio >= 3.1) return 'Bueno'
+  if (promedio >= 2.1) return 'Regular'
+  return 'A mejorar'
+}
+
 // ── Paquetes del servicio (los que ofrece el profesional) ─────────────────────
 const expandidosPaquetes  = reactive(new Set())
 const paquetesPorServicio = reactive({})
@@ -439,6 +448,16 @@ onMounted(cargarDatos)
 .detalle-info__ubicacion{ color: var(--color-texto-suave); font-size: .875rem; margin-bottom: .625rem; }
 .detalle-info__meta    { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; margin-bottom: .875rem; }
 .detalle-rating        { font-size: .9375rem; font-weight: 600; color: var(--color-advertencia); }
+.detalle-rating__clasificacion {
+  display: inline-block;
+  margin: 0 0.5rem;
+  padding: 0.14rem 0.5rem;
+  border-radius: 9999px;
+  background: rgba(245, 158, 11, 0.12);
+  color: #92400e;
+  font-size: .75rem;
+  font-weight: 700;
+}
 .detalle-rating__total { font-size: .8125rem; color: var(--color-texto-suave); font-weight: 400; }
 .detalle-info__bio     { font-size: .9375rem; color: var(--color-texto-suave); line-height: 1.6; max-width: 600px; }
 .modalidad-chip {

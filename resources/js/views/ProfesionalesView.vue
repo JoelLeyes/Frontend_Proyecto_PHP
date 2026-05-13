@@ -50,7 +50,9 @@
           <p class="tarjeta-profesional__negocio">{{ p.usuario?.name }}</p>
           <p class="tarjeta-profesional__ciudad">📍 {{ p.ciudad }}<span v-if="p.pais">, {{ p.pais }}</span></p>
           <p v-if="p.total_calificaciones > 0" class="tarjeta-profesional__calificacion">
-            ⭐ {{ p.promedio_calificacion }} <span style="color:var(--color-texto-suave)">({{ p.total_calificaciones }} reseñas)</span>
+            ⭐ {{ p.promedio_calificacion }}
+            <span class="tarjeta-profesional__clasificacion">{{ clasificacionPromedio(p.promedio_calificacion) }}</span>
+            <span style="color:var(--color-texto-suave)">({{ p.total_calificaciones }} reseñas)</span>
           </p>
           <div class="tarjeta-profesional__pie">
             <span class="modalidad-badge">{{ p.modalidad }}</span>
@@ -86,6 +88,14 @@ function iniciales(nombre) {
 function busquedaConRetraso() {
   clearTimeout(temporizador)
   temporizador = setTimeout(obtenerProfesionales, 400)
+}
+
+function clasificacionPromedio(promedio) {
+  if (promedio >= 4.6) return 'Excelente'
+  if (promedio >= 4.1) return 'Muy bueno'
+  if (promedio >= 3.1) return 'Bueno'
+  if (promedio >= 2.1) return 'Regular'
+  return 'A mejorar'
 }
 
 async function obtenerProfesionales() {
@@ -127,6 +137,16 @@ onMounted(obtenerProfesionales)
   display: flex;
   align-items: center;
   justify-content: center;
+}
+.tarjeta-profesional__clasificacion {
+  display: inline-block;
+  margin: 0 0.5rem;
+  padding: 0.14rem 0.5rem;
+  border-radius: 9999px;
+  background: rgba(245, 158, 11, 0.12);
+  color: #92400e;
+  font-size: 0.75rem;
+  font-weight: 700;
 }
 .modalidad-badge {
   display: inline-block;

@@ -71,6 +71,15 @@
                   📅 Reprogramar
                 </button>
 
+                <!-- CLIENTE: reseñar cuando ya finalizó -->
+                <button
+                  v-if="puedeResenarse(reserva)"
+                  class="boton-secundario boton-xs"
+                  @click="abrirResena(reserva)"
+                >
+                  ⭐ Reseñar
+                </button>
+
                 <!-- PROFESIONAL o CLIENTE: cancelar -->
                 <button
                   v-if="puedeCancelarse(reserva)"
@@ -186,6 +195,53 @@
       </div>
     </Teleport>
 
+    <!-- ══ Modal reseñar ══ -->
+    <Teleport to="body">
+      <div v-if="modalResena.abierto" class="modal-overlay" @click.self="modalResena.abierto = false">
+        <div class="modal">
+          <div class="modal__cabecera">
+            <div>
+              <h3 class="modal__titulo">Dejar reseña</h3>
+              <p class="modal__subtitulo">{{ modalResena.reserva?.servicio?.nombre }}</p>
+            </div>
+            <button class="modal__cerrar" @click="modalResena.abierto = false">✕</button>
+          </div>
+
+          <div class="modal__cuerpo">
+            <div class="campo">
+              <label>Calificación</label>
+              <div class="selector-estrellas">
+                <button
+                  v-for="estrella in 5"
+                  :key="estrella"
+                  type="button"
+                  :class="['estrella-btn', modalResena.calificacion >= estrella && 'estrella-btn--activo']"
+                  @click="modalResena.calificacion = estrella"
+                >
+                  ⭐
+                </button>
+              </div>
+            </div>
+
+            <div class="campo">
+              <label>Comentario <span style="font-weight:400">(opcional)</span></label>
+              <textarea v-model="modalResena.comentario" rows="3" placeholder="Contá cómo fue tu experiencia..."></textarea>
+            </div>
+
+            <p v-if="modalResena.error" class="alerta alerta--error">{{ modalResena.error }}</p>
+            <p v-if="modalResena.exito" class="alerta alerta--exito">{{ modalResena.exito }}</p>
+          </div>
+
+          <div class="modal__pie">
+            <button class="boton-secundario" @click="modalResena.abierto = false">Cancelar</button>
+            <button class="boton-principal" :disabled="modalResena.enviando || !modalResena.calificacion" @click="confirmarResena">
+              {{ modalResena.enviando ? 'Enviando...' : 'Publicar reseña' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
   </div>
 </template>
 
@@ -229,8 +285,9 @@ function formatearFecha(f) {
 
 function puedeCancelarse(r)    { return ['pendiente', 'confirmada', 'pagada'].includes(r.estado) }
 function puedeReprogramarse(r) { return ['pendiente', 'confirmada'].includes(r.estado) }
+function puedeResenarse(r)     { return r.estado === 'finalizada' && !r.resena && !esProfesional.value }
 function tieneAcciones(r) {
-  return puedeCancelarse(r) || puedeReprogramarse(r) || (esProfesional.value && r.estado === 'pendiente')
+  return puedeCancelarse(r) || puedeReprogramarse(r) || puedeResenarse(r) || (esProfesional.value && r.estado === 'pendiente')
 }
 
 // ── Carga ─────────────────────────────────────────────────────────────────────
@@ -328,6 +385,48 @@ async function confirmarReprogramar() {
   }
 }
 
+// ── Modal reseña ────────────────────────────────────────────────────────────
+const modalResena = ref({
+  abierto: false,
+  reserva: null,
+  calificacion: 0,
+  comentario: '',
+  enviando: false,
+  error: '',
+  exito: '',
+})
+
+function abrirResena(reserva) {
+  modalResena.value = {
+    abierto: true,
+    reserva,
+    calificacion: 0,
+    comentario: '',
+    enviando: false,
+    error: '',
+    exito: '',
+  }
+}
+
+async function confirmarResena() {
+  const r = modalResena.value
+  r.error = ''
+  r.enviando = true
+  try {
+    await store.crearResena(r.reserva.id, {
+      calificacion: r.calificacion,
+      comentario: r.comentario || null,
+    })
+    r.exito = '✅ Tu reseña fue publicada.'
+    await cargarReservas(store.paginacion?.current_page || 1)
+    setTimeout(() => { r.abierto = false }, 900)
+  } catch (e) {
+    r.error = e.response?.data?.error || 'No se pudo enviar la reseña.'
+  } finally {
+    r.enviando = false
+  }
+}
+
 onMounted(() => cargarReservas())
 </script>
 
@@ -395,4 +494,16 @@ onMounted(() => cargarReservas())
 .slot-btn { padding: .45rem .875rem; border: 1.5px solid var(--color-borde-suave); border-radius: var(--radio-borde); background: #fff; font-size: .875rem; font-weight: 500; cursor: pointer; color: var(--color-texto-medio); transition: border-color .15s, background .15s; }
 .slot-btn:hover { border-color: var(--color-primario); color: var(--color-primario); }
 .slot-btn--activo { background: var(--color-primario); border-color: var(--color-primario); color: #fff; font-weight: 600; }
+
+.selector-estrellas { display: flex; gap: .35rem; flex-wrap: wrap; }
+.estrella-btn {
+  border: 1px solid var(--color-borde-suave);
+  background: #fff;
+  border-radius: .75rem;
+  padding: .45rem .55rem;
+  cursor: pointer;
+  transition: transform .15s, border-color .15s, background .15s;
+}
+.estrella-btn:hover { transform: translateY(-1px); border-color: var(--color-advertencia); }
+.estrella-btn--activo { background: rgba(245, 158, 11, .12); border-color: var(--color-advertencia); }
 </style>
