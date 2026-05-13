@@ -15,14 +15,16 @@
             <img :src="auth.usuario.avatar" class="perfil-avatar-img" alt="Avatar" />
           </div>
           <div v-else class="perfil-avatar">{{ iniciales }}</div>
-          <div class="perfil-avatar-overlay">📷 Cambiar</div>
+          <div class="perfil-avatar-overlay">📷 Cambiar foto</div>
         </div>
-        <input ref="inputAvatar" type="file" accept="image/*" style="display:none" @change="onArchivoElegido" />
+        <input ref="inputAvatar" type="file" accept="image/jpeg,image/png,image/gif,image/webp" style="display:none" @change="onArchivoElegido" />
+
+        <p v-if="errorAvatar" class="perfil-avatar-error">{{ errorAvatar }}</p>
+        <p v-else-if="previstaAvatar" class="perfil-avatar-lista">✓ Lista — guardá los cambios</p>
 
         <h2 class="perfil-identidad__nombre">{{ auth.usuario?.name }}</h2>
         <p class="perfil-identidad__email">{{ auth.usuario?.email }}</p>
         <span class="insignia" :class="insigniaRol">{{ etiquetaRol }}</span>
-        <p class="perfil-avatar-ayuda">Hacé click en la foto para cambiarla<br><span style="font-size:.75rem">(JPG, PNG — máx. 2 MB)</span></p>
       </div>
 
       <!-- Formularios -->
@@ -173,11 +175,12 @@ import MapaUbicacion from '@/components/MapaUbicacion.vue'
 const auth = useAuthStore()
 
 const formulario   = ref({ name: '', telefono: '', notificaciones_email: true })
-const archivoAvatar = ref(null)
+const archivoAvatar  = ref(null)
 const previstaAvatar = ref(null)
-const guardando    = ref(false)
-const mensajeExito = ref('')
-const mensajeError = ref('')
+const errorAvatar    = ref('')
+const guardando      = ref(false)
+const mensajeExito   = ref('')
+const mensajeError   = ref('')
 const guardandoUbicacion = ref(false)
 const mensajeUbicacionExito = ref('')
 const mensajeUbicacionError = ref('')
@@ -227,9 +230,27 @@ onMounted(() => {
   }
 })
 
+const TIPOS_IMAGEN = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+const MAX_AVATAR_BYTES = 2 * 1024 * 1024
+
 function onArchivoElegido(evento) {
+  errorAvatar.value = ''
   const archivo = evento.target.files[0]
   if (!archivo) return
+
+  if (!TIPOS_IMAGEN.includes(archivo.type)) {
+    errorAvatar.value = 'El archivo debe ser JPG, PNG, GIF o WebP.'
+    evento.target.value = ''
+    return
+  }
+
+  if (archivo.size > MAX_AVATAR_BYTES) {
+    const mb = (archivo.size / 1024 / 1024).toFixed(1)
+    errorAvatar.value = `La imagen pesa ${mb} MB. El máximo es 2 MB.`
+    evento.target.value = ''
+    return
+  }
+
   archivoAvatar.value  = archivo
   previstaAvatar.value = URL.createObjectURL(archivo)
 }
@@ -256,6 +277,7 @@ async function guardar() {
       actualizarStore(data.usuario)
       archivoAvatar.value  = null
       previstaAvatar.value = null
+      errorAvatar.value    = ''
     } else {
       const { data } = await axios.put('/api/auth/perfil', formulario.value)
       actualizarStore(data.usuario)
@@ -380,12 +402,20 @@ async function guardarUbicacion() {
   transition: opacity .2s;
 }
 .perfil-avatar-wrap:hover .perfil-avatar-overlay { opacity: 1; }
-.perfil-avatar-ayuda {
-  font-size: .8rem;
-  color: var(--color-texto-suave);
+.perfil-avatar-error {
+  font-size: .75rem;
+  color: var(--color-error);
   text-align: center;
-  line-height: 1.4;
-  margin-top: .5rem;
+  max-width: 140px;
+  line-height: 1.3;
+  margin-top: .25rem;
+}
+.perfil-avatar-lista {
+  font-size: .75rem;
+  color: var(--color-exito);
+  font-weight: 600;
+  text-align: center;
+  margin-top: .25rem;
 }
 
 /* Identidad */
