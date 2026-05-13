@@ -21,6 +21,15 @@
           <span class="modalidad-chip">{{ profesional.modalidad }}</span>
         </div>
         <p v-if="profesional.bio" class="detalle-info__bio">{{ profesional.bio }}</p>
+        <div v-if="profesional.modalidad !== 'remota' && profesional.latitud && profesional.longitud" class="detalle-mapa">
+          <MapaUbicacion
+            :latitud="profesional.latitud"
+            :longitud="profesional.longitud"
+            titulo="Lugar del encuentro"
+            :subtitulo="profesional.direccion || 'Ubicación definida por el profesional'"
+            height="240px"
+          />
+        </div>
       </div>
     </div>
 
@@ -179,6 +188,17 @@
             </template>
           </div>
 
+          <div v-if="modal.servicio?.modalidad !== 'remota' && profesional.latitud && profesional.longitud" class="campo">
+            <label>Ubicación del encuentro</label>
+            <MapaUbicacion
+              :latitud="profesional.latitud"
+              :longitud="profesional.longitud"
+              :subtitulo="profesional.direccion || 'Punto fijado por el profesional'"
+              height="220px"
+            />
+            <small class="campo-ayuda">Este es el punto presencial donde se realizará el servicio.</small>
+          </div>
+
           <!-- Usar paquete (si el cliente tiene paquetes activos para este servicio) -->
           <div v-if="auth.estaLogueado && auth.usuario?.rol === 'cliente' && paquetesParaServicio.length" class="campo">
             <label>Usar paquete de sesiones</label>
@@ -265,6 +285,7 @@ import { ref, computed, reactive, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import axios from 'axios'
+import MapaUbicacion from '@/components/MapaUbicacion.vue'
 
 const ruta        = useRoute()
 const enrutador   = useRouter()
@@ -460,6 +481,7 @@ onMounted(cargarDatos)
 }
 .detalle-rating__total { font-size: .8125rem; color: var(--color-texto-suave); font-weight: 400; }
 .detalle-info__bio     { font-size: .9375rem; color: var(--color-texto-suave); line-height: 1.6; max-width: 600px; }
+.detalle-mapa { margin-top: 1rem; }
 .modalidad-chip {
   display: inline-block; padding: .2rem .75rem;
   background: var(--color-primario-claro); color: var(--color-primario-oscuro);
