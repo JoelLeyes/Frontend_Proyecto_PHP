@@ -5,7 +5,7 @@
 //   - API (/api/*):                   Network Only — datos siempre frescos
 // ──────────────────────────────────────────────────────────────────────────
 
-const CACHE_NAME    = 'servipro-v1'
+const CACHE_NAME    = 'servipro-v2'
 const OFFLINE_PAGE  = '/index.html'
 const SHELL_URLS    = ['/', '/index.html']
 
