@@ -40,6 +40,12 @@ const rutas = [
                 meta: { rol: 'profesional' },
             },
             {
+                path: 'cobros',
+                name: 'mis-cobros',
+                component: () => import('@/views/PagosView.vue'),
+                meta: { rol: 'profesional' },
+            },
+            {
                 path: 'paquetes',
                 name: 'mis-paquetes',
                 component: () => import('@/views/PaquetesView.vue'),

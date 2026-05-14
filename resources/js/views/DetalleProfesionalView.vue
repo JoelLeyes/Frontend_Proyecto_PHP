@@ -247,7 +247,7 @@
     <div v-if="modalCompra.abierto" class="modal-overlay" @click.self="modalCompra.abierto = false">
       <div class="modal">
         <div class="modal__cabecera">
-          <h3 class="modal__titulo">Confirmar compra</h3>
+          <h3 class="modal__titulo">Comprar paquete</h3>
           <button class="modal__cerrar" @click="modalCompra.abierto = false">✕</button>
         </div>
         <div class="modal__cuerpo">
@@ -264,14 +264,31 @@
               Equivale a ${{ modalCompra.paquete ? (modalCompra.paquete.precio / modalCompra.paquete.cantidad_sesiones).toFixed(2) : '' }} por sesión
             </p>
           </div>
-          <p v-if="modalCompra.error" class="alerta alerta--error">{{ modalCompra.error }}</p>
-          <p v-if="modalCompra.exito" class="alerta alerta--exito">{{ modalCompra.exito }}</p>
-        </div>
-        <div class="modal__pie">
-          <button class="boton-secundario" @click="modalCompra.abierto = false">Cancelar</button>
-          <button class="boton-principal" :disabled="modalCompra.enviando" @click="confirmarCompra">
-            {{ modalCompra.enviando ? 'Procesando...' : 'Confirmar compra' }}
-          </button>
+
+          <!-- Paso 1: reservar + iniciar pago -->
+          <template v-if="modalCompra.paso === 'confirmacion'">
+            <p v-if="modalCompra.error" class="alerta alerta--error">{{ modalCompra.error }}</p>
+            <div class="modal__pie" style="border:none;padding:0;margin-top:1rem">
+              <button class="boton-secundario" @click="modalCompra.abierto = false">Cancelar</button>
+              <button class="boton-principal" :disabled="modalCompra.enviando" @click="iniciarCompra">
+                {{ modalCompra.enviando ? 'Preparando pago...' : 'Pagar con PayPal' }}
+              </button>
+            </div>
+          </template>
+
+          <!-- Paso 2: botones PayPal -->
+          <template v-else-if="modalCompra.paso === 'pago'">
+            <BotonPago
+              tipo="paquete"
+              :entidad-id="modalCompra.paqueteClienteId"
+              @pagado="onCompraExitosa"
+            />
+          </template>
+
+          <!-- Paso 3: éxito -->
+          <p v-else-if="modalCompra.paso === 'exito'" class="alerta alerta--exito">
+            ✅ ¡Paquete adquirido! Lo encontrás en "Mis paquetes".
+          </p>
         </div>
       </div>
     </div>
@@ -286,6 +303,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import axios from 'axios'
 import MapaUbicacion from '@/components/MapaUbicacion.vue'
+import BotonPago from '@/components/BotonPago.vue'
 
 const ruta        = useRoute()
 const enrutador   = useRouter()
@@ -411,7 +429,8 @@ async function confirmarReserva() {
 
 // ── Modal compra de paquete ───────────────────────────────────────────────────
 const modalCompra = ref({
-  abierto: false, paquete: null, enviando: false, error: '', exito: '',
+  abierto: false, paquete: null, paqueteClienteId: null,
+  paso: 'confirmacion', enviando: false, error: '',
 })
 
 function abrirCompra(paquete) {
@@ -423,20 +442,28 @@ function abrirCompra(paquete) {
     alert('Solo los clientes pueden adquirir paquetes.')
     return
   }
-  modalCompra.value = { abierto: true, paquete, enviando: false, error: '', exito: '' }
+  modalCompra.value = {
+    abierto: true, paquete, paqueteClienteId: null,
+    paso: 'confirmacion', enviando: false, error: '',
+  }
 }
 
-async function confirmarCompra() {
+async function iniciarCompra() {
   modalCompra.value.error = ''; modalCompra.value.enviando = true
   try {
-    await axios.post(`/api/paquetes-servicio/${modalCompra.value.paquete.id}/comprar`)
-    modalCompra.value.exito = '✅ ¡Paquete adquirido! Lo encontrás en "Mis paquetes".'
-    setTimeout(() => { modalCompra.value.abierto = false }, 2000)
+    const { data } = await axios.post(`/api/paquetes-servicio/${modalCompra.value.paquete.id}/comprar`)
+    modalCompra.value.paqueteClienteId = data.id
+    modalCompra.value.paso = 'pago'
   } catch (e) {
-    modalCompra.value.error = e.response?.data?.error || 'No se pudo procesar la compra.'
+    modalCompra.value.error = e.response?.data?.error || 'No se pudo iniciar la compra.'
   } finally {
     modalCompra.value.enviando = false
   }
+}
+
+function onCompraExitosa() {
+  modalCompra.value.paso = 'exito'
+  setTimeout(() => { modalCompra.value.abierto = false }, 2500)
 }
 
 // ── Carga inicial ─────────────────────────────────────────────────────────────
@@ -452,120 +479,3 @@ async function cargarDatos() {
 onMounted(cargarDatos)
 </script>
 
-<style scoped>
-.detalle-avatar {
-  width: 110px; height: 110px; border-radius: 50%; overflow: hidden; flex-shrink: 0;
-  border: 3px solid var(--color-primario-claro); box-shadow: var(--sombra-media);
-}
-.detalle-avatar img { width: 100%; height: 100%; object-fit: cover; }
-.detalle-avatar__defecto {
-  width: 100%; height: 100%;
-  background: linear-gradient(135deg, var(--color-primario), var(--color-primario-oscuro));
-  color: #fff; display: flex; align-items: center; justify-content: center;
-  font-size: 2rem; font-weight: 700;
-}
-.detalle-info h1       { font-size: 1.625rem; margin-bottom: .25rem; }
-.detalle-info__nombre  { color: var(--color-texto-suave); font-size: .9375rem; margin-bottom: .375rem; }
-.detalle-info__ubicacion{ color: var(--color-texto-suave); font-size: .875rem; margin-bottom: .625rem; }
-.detalle-info__meta    { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; margin-bottom: .875rem; }
-.detalle-rating        { font-size: .9375rem; font-weight: 600; color: var(--color-advertencia); }
-.detalle-rating__clasificacion {
-  display: inline-block;
-  margin: 0 0.5rem;
-  padding: 0.14rem 0.5rem;
-  border-radius: 9999px;
-  background: rgba(245, 158, 11, 0.12);
-  color: #92400e;
-  font-size: .75rem;
-  font-weight: 700;
-}
-.detalle-rating__total { font-size: .8125rem; color: var(--color-texto-suave); font-weight: 400; }
-.detalle-info__bio     { font-size: .9375rem; color: var(--color-texto-suave); line-height: 1.6; max-width: 600px; }
-.detalle-mapa { margin-top: 1rem; }
-.modalidad-chip {
-  display: inline-block; padding: .2rem .75rem;
-  background: var(--color-primario-claro); color: var(--color-primario-oscuro);
-  border-radius: 9999px; font-size: .8125rem; font-weight: 600; text-transform: capitalize;
-}
-.estado-vacio { text-align: center; padding: 3rem; color: var(--color-texto-suave); }
-.estado-vacio__icono { font-size: 2.5rem; margin-bottom: .75rem; }
-
-/* Servicio con paquetes */
-.servicio-det {
-  background: #fff;
-  border: 1px solid var(--color-borde);
-  border-radius: var(--radio-borde);
-  padding: 1rem 1.25rem;
-  box-shadow: var(--sombra);
-  display: flex;
-  flex-direction: column;
-  gap: .75rem;
-}
-.servicio-det__info    { flex: 1; }
-.servicio-det__acciones { display: flex; gap: .625rem; flex-wrap: wrap; }
-.boton-paquetes { font-size: .875rem; padding: .5rem 1rem; }
-.boton-sm { padding: .4rem .875rem; font-size: .875rem; }
-
-/* Sección paquetes disponibles */
-.paquetes-disponibles {
-  border-top: 1px solid var(--color-borde-suave);
-  padding-top: .875rem;
-}
-.paquetes-lista__titulo {
-  font-size: .75rem; font-weight: 700; text-transform: uppercase;
-  letter-spacing: .05em; color: var(--color-texto-suave); margin-bottom: .75rem;
-}
-.paquetes-lista { display: flex; flex-direction: column; gap: .625rem; }
-.paquete-item {
-  display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem;
-  padding: .75rem 1rem;
-  background: var(--color-fondo);
-  border: 1px solid var(--color-borde-suave);
-  border-radius: var(--radio-borde);
-}
-.paquete-item__info { flex: 1; display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
-.paquete-item__sesiones { font-size: .8125rem; color: var(--color-texto-suave); }
-.paquete-item__precio   { font-weight: 700; color: var(--color-primario); font-size: .9375rem; }
-.paquete-item__ahorro   { font-size: .75rem; color: var(--color-texto-suave); }
-.paquete-item__desc     { width: 100%; font-size: .8125rem; color: var(--color-texto-suave); margin-top: .1rem; }
-.paquetes-vacio { font-size: .875rem; color: var(--color-texto-suave); padding: .5rem 0; }
-
-/* Selección de paquete en reserva */
-.paquetes-seleccion { display: flex; flex-direction: column; gap: .375rem; }
-.paquete-sel-btn {
-  text-align: left; padding: .625rem .875rem;
-  border: 1.5px solid var(--color-borde-suave); border-radius: var(--radio-borde);
-  background: #fff; cursor: pointer; font-size: .875rem; color: var(--color-texto-medio);
-  transition: border-color .15s; display: flex; align-items: center; gap: .5rem; flex-wrap: wrap;
-}
-.paquete-sel-btn:hover { border-color: var(--color-primario); }
-.paquete-sel-btn--activo { border-color: var(--color-primario); background: var(--color-primario-claro); font-weight: 600; }
-.paquete-sel-btn__resto { font-size: .8125rem; color: var(--color-texto-suave); font-weight: 400; }
-.campo-ayuda { font-size: .75rem; color: var(--color-texto-suave); margin-top: .25rem; display: block; }
-
-/* Resumen de compra */
-.compra-resumen {
-  background: var(--color-fondo); border-radius: var(--radio-borde);
-  padding: 1.125rem; margin-bottom: .75rem;
-}
-.compra-resumen__nombre   { font-size: 1.0625rem; font-weight: 700; margin-bottom: .5rem; }
-.compra-resumen__detalle  { display: flex; align-items: center; justify-content: space-between; margin-bottom: .375rem; font-size: .9375rem; }
-.compra-resumen__precio   { font-size: 1.5rem; font-weight: 800; color: var(--color-primario); }
-.compra-resumen__desc     { font-size: .875rem; color: var(--color-texto-suave); margin-bottom: .375rem; }
-.compra-resumen__por-sesion { font-size: .8125rem; color: var(--color-texto-suave); font-weight: 500; }
-
-/* Campo deshabilitado en modal */
-.campo-deshabilitado { background: var(--color-fondo); color: var(--color-texto-suave); cursor: not-allowed; }
-
-/* Slots */
-.slots-titulo { font-size: .8125rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--color-texto-suave); margin-bottom: .75rem; }
-.slots-grilla { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: .25rem; }
-.slot-btn {
-  padding: .45rem .875rem; border: 1.5px solid var(--color-borde-suave);
-  border-radius: var(--radio-borde); background: #fff; font-size: .875rem; font-weight: 500;
-  cursor: pointer; transition: border-color .15s, background .15s, color .15s;
-  color: var(--color-texto-medio);
-}
-.slot-btn:hover        { border-color: var(--color-primario); color: var(--color-primario); }
-.slot-btn--activo { background: var(--color-primario); border-color: var(--color-primario); color: #fff; font-weight: 600; }
-</style>

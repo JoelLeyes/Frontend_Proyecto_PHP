@@ -46,6 +46,9 @@
               <RouterLink class="navbar__dropdown-item" :to="{ name: 'mi-disponibilidad' }" @click="menuAbierto = false">
                 🕐 Disponibilidad
               </RouterLink>
+              <RouterLink class="navbar__dropdown-item" :to="{ name: 'mis-cobros' }" @click="menuAbierto = false">
+                💳 Mis cobros
+              </RouterLink>
             </template>
             <RouterLink v-if="auth.usuario?.rol === 'admin'" class="navbar__dropdown-item" :to="{ name: 'panel-admin' }" @click="menuAbierto = false">
               ⚙️ Administración

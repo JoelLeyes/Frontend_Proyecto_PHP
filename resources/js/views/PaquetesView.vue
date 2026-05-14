@@ -57,8 +57,13 @@
             {{ p.paquete_servicio.descripcion }}
           </div>
 
-          <!-- CTA: reservar si tiene sesiones disponibles -->
-          <div v-if="p.estado === 'activo' && p.sesiones_usadas < p.sesiones_total" class="paquete-card__acciones">
+          <!-- CTA según estado -->
+          <div v-if="p.estado === 'pendiente_pago'" class="paquete-card__acciones">
+            <button class="boton-principal boton-sm" @click="abrirPago(p)">
+              💳 Completar pago
+            </button>
+          </div>
+          <div v-else-if="p.estado === 'activo' && p.sesiones_usadas < p.sesiones_total" class="paquete-card__acciones">
             <RouterLink
               :to="{ name: 'detalle-profesional', params: { id: p.paquete_servicio?.servicio?.profesional?.id } }"
               class="boton-principal boton-sm">
@@ -82,29 +87,87 @@
         </RouterLink>
       </div>
     </template>
+
+    <!-- Modal pago PayPal -->
+    <Teleport to="body">
+      <div v-if="modalPago.abierto" class="modal-overlay" @click.self="cerrarModalPago">
+        <div class="modal">
+          <div class="modal__cabecera">
+            <div>
+              <h3 class="modal__titulo">Completar pago</h3>
+              <p class="modal__subtitulo">{{ modalPago.paquete?.paquete_servicio?.nombre }}</p>
+            </div>
+            <button class="modal__cerrar" @click="cerrarModalPago">✕</button>
+          </div>
+          <div class="modal__cuerpo">
+            <div class="compra-resumen" style="margin-bottom:1rem">
+              <div class="compra-resumen__detalle">
+                <span>{{ modalPago.paquete?.sesiones_total }} sesiones</span>
+                <span class="compra-resumen__precio">${{ modalPago.paquete?.paquete_servicio?.precio }}</span>
+              </div>
+            </div>
+            <BotonPago
+              v-if="modalPago.paquete"
+              tipo="paquete"
+              :entidad-id="modalPago.paquete.id"
+              @pagado="onPagado"
+            />
+            <p v-if="modalPago.exito" class="alerta alerta--exito">{{ modalPago.exito }}</p>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
+import BotonPago from '@/components/BotonPago.vue'
 
 const cargando = ref(true)
 const paquetes = ref([])
 const filtro   = ref('')
 
 const FILTROS = [
-  { valor: '',         label: 'Todos' },
-  { valor: 'activo',   label: 'Activos' },
-  { valor: 'consumido',label: 'Completados' },
-  { valor: 'vencido',  label: 'Vencidos' },
+  { valor: '',               label: 'Todos' },
+  { valor: 'pendiente_pago', label: 'Pendientes' },
+  { valor: 'activo',         label: 'Activos' },
+  { valor: 'consumido',      label: 'Completados' },
+  { valor: 'vencido',        label: 'Vencidos' },
 ]
 
-const ETIQUETAS = { activo: 'Activo', consumido: 'Completado', vencido: 'Vencido' }
-const INSIGNIAS = { activo: 'insignia--confirmada', consumido: 'insignia--finalizada', vencido: 'insignia--cancelada' }
+const ETIQUETAS = {
+  pendiente_pago: 'Pago pendiente',
+  activo:         'Activo',
+  consumido:      'Completado',
+  vencido:        'Vencido',
+}
+const INSIGNIAS = {
+  pendiente_pago: 'insignia--pendiente',
+  activo:         'insignia--confirmada',
+  consumido:      'insignia--finalizada',
+  vencido:        'insignia--cancelada',
+}
 
 function etiquetaEstado(e) { return ETIQUETAS[e] || e }
 function insigniaEstado(e) { return INSIGNIAS[e] || '' }
+
+// ── Modal de pago ─────────────────────────────────────────────────────────────
+const modalPago = ref({ abierto: false, paquete: null, exito: '' })
+
+function abrirPago(p) {
+  modalPago.value = { abierto: true, paquete: p, exito: '' }
+}
+
+function cerrarModalPago() {
+  modalPago.value.abierto = false
+}
+
+function onPagado() {
+  modalPago.value.exito = '✅ ¡Pago completado! El paquete ya está activo.'
+  setTimeout(() => { cerrarModalPago(); cargar() }, 2000)
+}
 
 const paquetesFiltrados = computed(() =>
   filtro.value ? paquetes.value.filter(p => p.estado === filtro.value) : paquetes.value
@@ -133,74 +196,3 @@ async function cargar() {
 onMounted(cargar)
 </script>
 
-<style scoped>
-/* Filtros */
-.paquetes-filtros {
-  display: flex; gap: .375rem; flex-wrap: wrap; margin-bottom: 1.5rem;
-}
-.tab-btn {
-  padding: .5rem 1rem; border: 1.5px solid var(--color-borde-suave); border-radius: 9999px;
-  background: #fff; font-size: .875rem; font-weight: 500; cursor: pointer;
-  color: var(--color-texto-suave); transition: border-color .15s, color .15s, background .15s;
-}
-.tab-btn:hover { border-color: var(--color-primario); color: var(--color-primario); }
-.tab-btn--activo {
-  background: var(--color-primario); border-color: var(--color-primario);
-  color: #fff; font-weight: 600;
-}
-
-/* Grid */
-.paquetes-grilla {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1.25rem;
-}
-
-/* Card */
-.paquete-card {
-  background: #fff;
-  border: 1px solid var(--color-borde-suave);
-  border-radius: calc(var(--radio-borde) * 1.5);
-  padding: 1.25rem;
-  box-shadow: var(--sombra);
-  display: flex;
-  flex-direction: column;
-  gap: .875rem;
-}
-
-.paquete-card__cabecera {
-  display: flex; align-items: flex-start; justify-content: space-between; gap: .75rem;
-}
-.paquete-card__nombre     { font-weight: 700; font-size: 1rem; margin-bottom: .15rem; }
-.paquete-card__servicio   { font-size: .875rem; color: var(--color-primario); font-weight: 500; margin-bottom: .1rem; }
-.paquete-card__profesional{ font-size: .8125rem; color: var(--color-texto-suave); }
-
-/* Progreso */
-.progreso-barra {
-  height: 8px; background: var(--color-borde-suave); border-radius: 9999px; overflow: hidden; margin-bottom: .4rem;
-}
-.progreso-barra__fill {
-  height: 100%; background: linear-gradient(90deg, var(--color-primario), var(--color-acento));
-  border-radius: 9999px; transition: width .4s ease;
-}
-.progreso-barra__fill--consumido { background: linear-gradient(90deg, #22c55e, #16a34a); }
-.progreso-texto {
-  display: flex; justify-content: space-between; font-size: .8125rem;
-}
-.progreso-texto__usadas { color: var(--color-texto-suave); }
-.progreso-texto__total  { font-weight: 600; color: var(--color-texto-medio); }
-
-/* Detalle */
-.paquete-card__detalle { display: flex; flex-wrap: wrap; gap: .75rem; }
-.paquete-card__dato    { font-size: .8125rem; color: var(--color-texto-suave); }
-.paquete-card__desc    { font-size: .8125rem; color: var(--color-texto-suave); line-height: 1.4; border-top: 1px solid var(--color-borde-suave); padding-top: .75rem; }
-
-.paquete-card__acciones { margin-top: .25rem; }
-.paquete-card__agotado  { font-size: .875rem; color: #16a34a; font-weight: 600; margin-top: .25rem; }
-.boton-sm { padding: .4rem .875rem; font-size: .875rem; }
-
-/* Estado vacío */
-.estado-vacio { text-align: center; padding: 4rem 1rem; color: var(--color-texto-suave); }
-.estado-vacio__icono { font-size: 3rem; margin-bottom: 1rem; }
-.estado-vacio h3 { font-size: 1.25rem; color: var(--color-texto-medio); margin-bottom: .5rem; }
-</style>
