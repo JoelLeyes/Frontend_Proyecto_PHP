@@ -541,10 +541,12 @@ p:last-child { margin-bottom: 0; }
 }
 
 .layout-panel__contenido {
-  margin-left: var(--ancho-panel-lateral);
   flex: 1;
   padding: 2rem 2.5rem;
   min-width: 0;
+  max-width: 960px;
+  margin: 0 auto;
+  width: 100%;
 }
 
 .layout-panel__encabezado { margin-bottom: 1.75rem; }

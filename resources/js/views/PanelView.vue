@@ -124,6 +124,10 @@
           <span class="acceso-rapido__icono">🕐</span>
           <span class="acceso-rapido__texto">Disponibilidad</span>
         </RouterLink>
+        <RouterLink :to="{ name: 'mis-cobros' }" class="acceso-rapido">
+          <span class="acceso-rapido__icono">💳</span>
+          <span class="acceso-rapido__texto">Mis cobros</span>
+        </RouterLink>
         <RouterLink :to="{ name: 'mi-perfil' }" class="acceso-rapido">
           <span class="acceso-rapido__icono">👤</span>
           <span class="acceso-rapido__texto">Mi perfil</span>
