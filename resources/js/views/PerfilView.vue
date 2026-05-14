@@ -10,10 +10,9 @@
       <div class="tarjeta perfil-identidad">
         <!-- Avatar -->
         <div class="perfil-avatar-wrap" @click="$refs.inputAvatar.click()">
-          <img v-if="previstaAvatar" :src="previstaAvatar" class="perfil-avatar-img" alt="Avatar" />
-          <div v-else-if="auth.usuario?.avatar" class="perfil-avatar-img-wrap">
-            <img :src="auth.usuario.avatar" class="perfil-avatar-img" alt="Avatar" />
-          </div>
+          <img v-if="previstaAvatar || auth.usuario?.avatar"
+               :src="previstaAvatar || auth.usuario.avatar"
+               class="perfil-avatar-img" alt="Avatar" />
           <div v-else class="perfil-avatar">{{ iniciales }}</div>
           <div class="perfil-avatar-overlay">📷 Cambiar foto</div>
         </div>
@@ -357,120 +356,3 @@ async function guardarUbicacion() {
 }
 </script>
 
-<style scoped>
-.perfil-layout {
-  display: grid;
-  grid-template-columns: 240px 1fr;
-  gap: 1.5rem;
-  align-items: start;
-}
-
-/* Avatar */
-.perfil-avatar-wrap {
-  position: relative;
-  width: 96px; height: 96px;
-  border-radius: 50%;
-  cursor: pointer;
-  margin-bottom: .5rem;
-}
-.perfil-avatar-img {
-  width: 96px; height: 96px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 3px solid var(--color-primario-claro);
-  box-shadow: var(--sombra-media);
-  display: block;
-}
-.perfil-avatar {
-  width: 96px; height: 96px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--color-primario), var(--color-primario-oscuro));
-  color: #fff;
-  font-size: 1.875rem; font-weight: 700;
-  display: flex; align-items: center; justify-content: center;
-  border: 3px solid var(--color-primario-claro);
-  box-shadow: var(--sombra-media);
-}
-.perfil-avatar-overlay {
-  position: absolute; inset: 0;
-  border-radius: 50%;
-  background: rgba(0,0,0,.45);
-  color: #fff;
-  font-size: .75rem; font-weight: 600;
-  display: flex; align-items: center; justify-content: center;
-  opacity: 0;
-  transition: opacity .2s;
-}
-.perfil-avatar-wrap:hover .perfil-avatar-overlay { opacity: 1; }
-.perfil-avatar-error {
-  font-size: .75rem;
-  color: var(--color-error);
-  text-align: center;
-  max-width: 140px;
-  line-height: 1.3;
-  margin-top: .25rem;
-}
-.perfil-avatar-lista {
-  font-size: .75rem;
-  color: var(--color-exito);
-  font-weight: 600;
-  text-align: center;
-  margin-top: .25rem;
-}
-
-/* Identidad */
-.perfil-identidad {
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: .375rem;
-}
-.perfil-identidad__nombre { font-size: 1.125rem; font-weight: 700; }
-.perfil-identidad__email  { font-size: .875rem; color: var(--color-texto-suave); }
-
-/* Sección título */
-.perfil-seccion-titulo { font-size: 1rem; font-weight: 700; margin-bottom: 1.25rem; }
-
-/* Campo deshabilitado */
-.campo-deshabilitado { background: var(--color-fondo); color: var(--color-texto-suave); cursor: not-allowed; }
-.campo-ayuda { font-size: .75rem; color: var(--color-texto-suave); margin-top: .25rem; }
-
-/* Notificaciones */
-.notif-fila {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: .75rem 0;
-}
-.notif-fila__titulo { font-size: .9375rem; font-weight: 600; margin-bottom: .125rem; }
-.notif-fila__desc   { font-size: .8125rem; color: var(--color-texto-suave); }
-
-/* Toggle switch */
-.toggle { position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0; }
-.toggle input { opacity: 0; width: 0; height: 0; }
-.toggle__slider {
-  position: absolute; inset: 0;
-  background: var(--color-borde-suave);
-  border-radius: 9999px;
-  cursor: pointer;
-  transition: background .2s;
-}
-.toggle__slider::before {
-  content: '';
-  position: absolute;
-  width: 18px; height: 18px;
-  left: 3px; top: 3px;
-  border-radius: 50%;
-  background: #fff;
-  transition: transform .2s;
-  box-shadow: 0 1px 3px rgba(0,0,0,.2);
-}
-.toggle input:checked + .toggle__slider { background: var(--color-primario); }
-.toggle input:checked + .toggle__slider::before { transform: translateX(20px); }
-
-@media (max-width: 700px) {
-  .perfil-layout { grid-template-columns: 1fr; }
-}
-</style>
