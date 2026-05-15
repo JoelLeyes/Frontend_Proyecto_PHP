@@ -73,78 +73,103 @@
           </div>
         </div>
 
-        <!-- Sección de paquetes (expandible) -->
-        <div v-if="expandidos.has(servicio.id)" class="paquetes-seccion">
-          <div class="paquetes-seccion__cabecera">
-            <p class="paquetes-seccion__titulo">Paquetes de sesiones</p>
-            <button class="boton-principal boton-sm" @click.stop="abrirModalPaquete(servicio)">
-              + Nuevo paquete
+        <!-- Sección expandible con tabs: Paquetes y Ubicaciones -->
+        <div v-if="expandidos.has(servicio.id)" class="servicio-detalles">
+          <!-- Tabs -->
+          <div class="tabs-servicio">
+            <button 
+              :class="['tab-btn', (tabActivoPorServicio[servicio.id] ?? 'paquetes') === 'paquetes' && 'tab-btn--activo']"
+              @click="tabActivoPorServicio[servicio.id] = 'paquetes'">
+              📦 Paquetes
+            </button>
+            <button 
+              :class="['tab-btn', tabActivoPorServicio[servicio.id] === 'ubicaciones' && 'tab-btn--activo']"
+              @click="tabActivoPorServicio[servicio.id] = 'ubicaciones'">
+              📍 Ubicaciones
             </button>
           </div>
-          <p class="paquetes-seccion__ayuda">
-            Ofrecé descuentos por volumen. Los clientes compran el paquete y agotan las sesiones progresivamente.
-          </p>
 
-          <div v-if="cargandoPaquetes.has(servicio.id)" class="cargando" style="padding:1rem">
-            Cargando paquetes...
-          </div>
-          <template v-else>
-            <div v-if="paquetesPorServicio[servicio.id]?.length" class="paquetes-tabla">
-              <table class="tabla">
-                <thead>
-                  <tr>
-                    <th>Nombre</th>
-                    <th>Sesiones</th>
-                    <th>Precio total</th>
-                    <th>Precio/sesión</th>
-                    <th>Estado</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="paquete in paquetesPorServicio[servicio.id]" :key="paquete.id">
-                    <td>
-                      <strong>{{ paquete.nombre }}</strong>
-                      <p v-if="paquete.descripcion" class="td-suave" style="font-size:.8rem;margin-top:.1rem">{{ paquete.descripcion }}</p>
-                    </td>
-                    <td>{{ paquete.cantidad_sesiones }}</td>
-                    <td>${{ paquete.precio }}</td>
-                    <td class="td-suave">${{ (paquete.precio / paquete.cantidad_sesiones).toFixed(2) }}</td>
-                    <td>
-                      <span :class="['insignia', paquete.activo ? 'insignia--confirmada' : 'insignia--cancelada']">
-                        {{ paquete.activo ? 'Activo' : 'Inactivo' }}
-                      </span>
-                    </td>
-                    <td>
-                      <div style="display:flex;gap:.375rem">
-                        <button class="boton-secundario boton-xs" @click="abrirModalEditarPaquete(servicio, paquete)">
-                          ✏️ Editar
-                        </button>
-                        <button
-                          v-if="paquete.activo"
-                          class="boton-peligro boton-xs"
-                          @click="desactivarPaquete(servicio, paquete)">
-                          Desactivar
-                        </button>
-                        <button
-                          v-else
-                          class="boton-secundario boton-xs"
-                          @click="activarPaquete(servicio, paquete)">
-                          Activar
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <div v-else class="paquetes-vacio">
-              No hay paquetes para este servicio.
-              <button class="boton-secundario boton-sm" style="margin-left:.75rem" @click.stop="abrirModalPaquete(servicio)">
-                + Crear primero
+          <!-- Tab: Paquetes -->
+          <div v-if="(tabActivoPorServicio[servicio.id] ?? 'paquetes') === 'paquetes'" class="tab-content">
+            <div class="paquetes-seccion__cabecera">
+              <p class="paquetes-seccion__titulo">Paquetes de sesiones</p>
+              <button class="boton-principal boton-sm" @click.stop="abrirModalPaquete(servicio)">
+                + Nuevo paquete
               </button>
             </div>
-          </template>
+            <p class="paquetes-seccion__ayuda">
+              Ofrecé descuentos por volumen. Los clientes compran el paquete y agotan las sesiones progresivamente.
+            </p>
+
+            <div v-if="cargandoPaquetes.has(servicio.id)" class="cargando" style="padding:1rem">
+              Cargando paquetes...
+            </div>
+            <template v-else>
+              <div v-if="paquetesPorServicio[servicio.id]?.length" class="paquetes-tabla">
+                <table class="tabla">
+                  <thead>
+                    <tr>
+                      <th>Nombre</th>
+                      <th>Sesiones</th>
+                      <th>Precio total</th>
+                      <th>Precio/sesión</th>
+                      <th>Estado</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="paquete in paquetesPorServicio[servicio.id]" :key="paquete.id">
+                      <td>
+                        <strong>{{ paquete.nombre }}</strong>
+                        <p v-if="paquete.descripcion" class="td-suave" style="font-size:.8rem;margin-top:.1rem">{{ paquete.descripcion }}</p>
+                      </td>
+                      <td>{{ paquete.cantidad_sesiones }}</td>
+                      <td>${{ paquete.precio }}</td>
+                      <td class="td-suave">${{ (paquete.precio / paquete.cantidad_sesiones).toFixed(2) }}</td>
+                      <td>
+                        <span :class="['insignia', paquete.activo ? 'insignia--confirmada' : 'insignia--cancelada']">
+                          {{ paquete.activo ? 'Activo' : 'Inactivo' }}
+                        </span>
+                      </td>
+                      <td>
+                        <div style="display:flex;gap:.375rem">
+                          <button class="boton-secundario boton-xs" @click="abrirModalEditarPaquete(servicio, paquete)">
+                            ✏️ Editar
+                          </button>
+                          <button
+                            v-if="paquete.activo"
+                            class="boton-peligro boton-xs"
+                            @click="desactivarPaquete(servicio, paquete)">
+                            Desactivar
+                          </button>
+                          <button
+                            v-else
+                            class="boton-secundario boton-xs"
+                            @click="activarPaquete(servicio, paquete)">
+                            Activar
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div v-else class="paquetes-vacio">
+                No hay paquetes para este servicio.
+                <button class="boton-secundario boton-sm" style="margin-left:.75rem" @click.stop="abrirModalPaquete(servicio)">
+                  + Crear primero
+                </button>
+              </div>
+            </template>
+          </div>
+
+          <!-- Tab: Ubicaciones -->
+          <div v-if="tabActivoPorServicio[servicio.id] === 'ubicaciones'" class="tab-content">
+            <MapaEditorUbicacion 
+              :servicioId="servicio.id"
+              googleMapsApiKey="AIzaSyBk9VJ0Yk5ZXW9O5P0Q5R0S5T0U5V0W5X0"
+            />
+          </div>
         </div>
 
       </div>
@@ -212,6 +237,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import axios from 'axios'
 import { useAuthStore } from '@/stores/auth'
+import MapaEditorUbicacion from '@/components/MapaEditorUbicacion.vue'
 
 const auth = useAuthStore()
 const profesionalId = auth.usuario?.profesional?.id
@@ -226,6 +252,9 @@ const errorForm          = ref('')
 const expandidos        = reactive(new Set())
 const paquetesPorServicio = reactive({})
 const cargandoPaquetes  = reactive(new Set())
+
+// Tab activo por servicio (paquetes o ubicaciones)
+const tabActivoPorServicio = reactive({})
 
 const nuevoServicio = ref({
   nombre: '', descripcion: '', precio: '', duracion_minutos: 60, modalidad: 'presencial',
@@ -390,11 +419,50 @@ onMounted(cargarServicios)
 .servicio-bloque__chevron { font-size: .9rem; color: var(--color-texto-suave); transition: transform .2s; }
 .servicio-bloque__chevron--abierto { transform: rotate(180deg); }
 
+/* Sección detalles (paquetes + ubicaciones) */
+.servicio-detalles {
+  border-top: 1px solid var(--color-borde-suave);
+  background: var(--color-fondo);
+}
+
+/* Tabs */
+.tabs-servicio {
+  display: flex;
+  gap: 0;
+  padding: 0 1.25rem;
+  border-bottom: 1px solid var(--color-borde-suave);
+}
+
+.tab-btn {
+  padding: 0.75rem 1rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+  color: var(--color-texto-suave);
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+  font-size: 0.9rem;
+}
+
+.tab-btn:hover {
+  color: var(--color-texto-medio);
+}
+
+.tab-btn--activo {
+  color: #007bff;
+  border-bottom-color: #007bff;
+}
+
+.tab-content {
+  padding: 1.125rem 1.25rem;
+}
+
 /* Sección paquetes */
 .paquetes-seccion {
-  border-top: 1px solid var(--color-borde-suave);
-  padding: 1.125rem 1.25rem;
-  background: var(--color-fondo);
+  border-top: none;
+  padding: 0;
+  background: none;
 }
 .paquetes-seccion__cabecera {
   display: flex; align-items: center; justify-content: space-between; margin-bottom: .375rem;
