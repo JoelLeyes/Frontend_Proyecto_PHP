@@ -128,6 +128,10 @@
           <span class="acceso-rapido__icono">💳</span>
           <span class="acceso-rapido__texto">Mis cobros</span>
         </RouterLink>
+        <RouterLink :to="{ name: 'mis-resenas' }" class="acceso-rapido">
+          <span class="acceso-rapido__icono">⭐</span>
+          <span class="acceso-rapido__texto">Mis reseñas</span>
+        </RouterLink>
         <RouterLink :to="{ name: 'mi-perfil' }" class="acceso-rapido">
           <span class="acceso-rapido__icono">👤</span>
           <span class="acceso-rapido__texto">Mi perfil</span>

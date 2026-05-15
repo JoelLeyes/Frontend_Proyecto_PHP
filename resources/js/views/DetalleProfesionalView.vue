@@ -111,18 +111,44 @@
 
     <!-- Tab Reseñas -->
     <div v-if="tabActivo === 'resenas'">
-      <div v-if="resenas.length" class="grilla-resenas">
-        <div v-for="resena in resenas" :key="resena.id" class="tarjeta-resena">
-          <div class="tarjeta-resena__estrellas">
-            {{ '⭐'.repeat(resena.calificacion) }}{{ '☆'.repeat(5 - resena.calificacion) }}
-          </div>
-          <p class="tarjeta-resena__comentario">{{ resena.comentario }}</p>
-          <p class="tarjeta-resena__autor">— {{ resena.evaluador?.name }}</p>
-        </div>
+      <!-- Selector de servicio (si hay múltiples servicios) -->
+      <div v-if="profesional.servicios?.length > 1" class="resenas-filtro">
+        <label class="resenas-filtro__label">Filtrar por servicio:</label>
+        <select v-model="servicioSeleccionado" @change="cargarResenas" class="resenas-filtro__select">
+          <option :value="null">Todas las reseñas</option>
+          <option v-for="srv in profesional.servicios" :key="srv.id" :value="srv.id">
+            {{ srv.nombre }}
+          </option>
+        </select>
       </div>
+
+      <div v-if="cargandoResenas" class="cargando" style="padding:2rem">
+        Cargando reseñas...
+      </div>
+
+      <template v-else-if="resenas.length">
+        <div class="grilla-resenas">
+          <div v-for="resena in resenas" :key="resena.id" class="tarjeta-resena">
+            <div class="tarjeta-resena__encabezado">
+              <div class="tarjeta-resena__estrellas">
+                {{ '⭐'.repeat(resena.calificacion) }}{{ '☆'.repeat(5 - resena.calificacion) }}
+              </div>
+              <p class="tarjeta-resena__servicio">{{ resena.reserva?.servicio?.nombre }}</p>
+            </div>
+            <p class="tarjeta-resena__comentario">{{ resena.comentario }}</p>
+            <p class="tarjeta-resena__autor">— {{ resena.evaluador?.name }}</p>
+          </div>
+        </div>
+      </template>
+
       <div v-else class="estado-vacio">
         <div class="estado-vacio__icono">💬</div>
-        <p>Todavía no hay reseñas para este profesional.</p>
+        <p v-if="servicioSeleccionado">
+          No hay reseñas para este servicio todavía.
+        </p>
+        <p v-else>
+          Todavía no hay reseñas para este profesional.
+        </p>
       </div>
     </div>
 
@@ -311,6 +337,8 @@ const auth        = useAuthStore()
 const profesional = ref(null)
 const resenas     = ref([])
 const tabActivo   = ref('servicios')
+const servicioSeleccionado = ref(null)
+const cargandoResenas = ref(false)
 
 const hoy = new Date().toISOString().slice(0, 10)
 
@@ -466,14 +494,33 @@ function onCompraExitosa() {
   setTimeout(() => { modalCompra.value.abierto = false }, 2500)
 }
 
+// ── Carga de reseñas (con filtro opcional por servicio) ────────────────────────
+async function cargarResenas() {
+  cargandoResenas.value = true
+  try {
+    const params = {}
+    if (servicioSeleccionado.value) {
+      params.servicio_id = servicioSeleccionado.value
+    }
+    const { data } = await axios.get(`/api/profesionales/${ruta.params.id}/resenas`, { params })
+    resenas.value = data.data || []
+  } catch (error) {
+    console.error('Error cargando reseñas:', error)
+    resenas.value = []
+  } finally {
+    cargandoResenas.value = false
+  }
+}
+
 // ── Carga inicial ─────────────────────────────────────────────────────────────
 async function cargarDatos() {
-  const [resProfesional, resResenas] = await Promise.all([
-    axios.get(`/api/profesionales/${ruta.params.id}`),
-    axios.get(`/api/profesionales/${ruta.params.id}/resenas`),
-  ])
-  profesional.value = resProfesional.data
-  resenas.value     = resResenas.data.data
+  try {
+    const { data } = await axios.get(`/api/profesionales/${ruta.params.id}`)
+    profesional.value = data
+    await cargarResenas()
+  } catch (error) {
+    console.error('Error cargando profesional:', error)
+  }
 }
 
 onMounted(cargarDatos)
