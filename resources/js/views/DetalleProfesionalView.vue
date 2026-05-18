@@ -214,12 +214,15 @@
             </template>
           </div>
 
-          <div v-if="modal.servicio?.modalidad !== 'remota' && profesional.latitud && profesional.longitud" class="campo">
+          <div
+            v-if="modal.servicio?.modalidad !== 'remota' && (modal.servicio?.ubicacion || (profesional.latitud && profesional.longitud))"
+            class="campo"
+          >
             <label>Ubicación del encuentro</label>
             <MapaUbicacion
-              :latitud="profesional.latitud"
-              :longitud="profesional.longitud"
-              :subtitulo="profesional.direccion || 'Punto fijado por el profesional'"
+              :latitud="modal.servicio?.ubicacion?.latitud ?? profesional.latitud"
+              :longitud="modal.servicio?.ubicacion?.longitud ?? profesional.longitud"
+              :subtitulo="modal.servicio?.ubicacion?.direccion || profesional.direccion || 'Punto fijado por el profesional'"
               height="220px"
             />
             <small class="campo-ayuda">Este es el punto presencial donde se realizará el servicio.</small>
