@@ -80,86 +80,6 @@
           </div>
         </div>
 
-        <!-- Ubicación profesional -->
-        <div v-if="esProfesional" class="tarjeta">
-          <div class="perfil-seccion-cabecera">
-            <h3 class="perfil-seccion-titulo">Ubicación del encuentro</h3>
-            <span class="perfil-seccion-tag">Para servicios presenciales o híbridos</span>
-          </div>
-
-          <p class="perfil-seccion-desc">
-            Definí la ubicación donde atenderás al cliente. El mapa se usa para que el cliente vea el punto exacto del encuentro.
-          </p>
-
-          <div class="campo">
-            <label>Modalidad del profesional</label>
-            <select v-model="perfilProfesional.form.modalidad">
-              <option value="presencial">Presencial</option>
-              <option value="remota">Remota</option>
-              <option value="hibrida">Híbrida</option>
-            </select>
-          </div>
-
-          <template v-if="perfilProfesional.form.modalidad !== 'remota'">
-            <div class="campo">
-              <label>Dirección</label>
-              <input v-model="perfilProfesional.form.direccion" placeholder="Ej: Av. 18 de Julio 1234" />
-            </div>
-
-            <div class="campo-fila">
-              <div class="campo">
-                <label>Ciudad</label>
-                <input v-model="perfilProfesional.form.ciudad" placeholder="Ej: Montevideo" />
-              </div>
-              <div class="campo">
-                <label>País</label>
-                <input v-model="perfilProfesional.form.pais" placeholder="Ej: UY" maxlength="3" />
-              </div>
-            </div>
-
-            <div class="perfil-mapa-bloque">
-              <MapaUbicacion
-                v-model:latitud="perfilProfesional.form.latitud"
-                v-model:longitud="perfilProfesional.form.longitud"
-                editable
-                titulo="Seleccioná la ubicación en el mapa"
-                subtitulo="Hacé clic en el punto exacto donde atenderás"
-                ayuda="También podés mover el marcador arrastrándolo una vez colocado."
-                height="320px"
-              />
-
-              <div class="perfil-mapa-acciones">
-                <button type="button" class="boton-secundario" @click="usarUbicacionActual">
-                  📍 Usar mi ubicación actual
-                </button>
-                <div class="perfil-coordenadas">
-                  <span>Lat: {{ mostrarCoordenadas(perfilProfesional.form.latitud) }}</span>
-                  <span>Lng: {{ mostrarCoordenadas(perfilProfesional.form.longitud) }}</span>
-                </div>
-              </div>
-            </div>
-          </template>
-
-          <div v-else class="alerta alerta--info">
-            La modalidad remota no necesita una ubicación física.
-          </div>
-
-          <div class="campo" style="margin-top:1rem">
-            <label>Horas mínimas para cancelar</label>
-            <input v-model.number="perfilProfesional.form.horas_cancelacion" type="number" min="0" max="168" step="1" />
-            <small class="campo-ayuda">Se usa para respetar la política de cancelación del profesional.</small>
-          </div>
-
-          <p v-if="mensajeUbicacionExito" class="alerta alerta--exito">{{ mensajeUbicacionExito }}</p>
-          <p v-if="mensajeUbicacionError" class="alerta alerta--error">{{ mensajeUbicacionError }}</p>
-
-          <div style="display:flex;justify-content:flex-end;margin-top:.5rem">
-            <button class="boton-principal" :disabled="guardandoUbicacion" @click="guardarUbicacion">
-              {{ guardandoUbicacion ? 'Guardando...' : 'Guardar ubicación' }}
-            </button>
-          </div>
-        </div>
-
       </div>
     </div>
   </div>
@@ -169,7 +89,6 @@
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import axios from 'axios'
-import MapaUbicacion from '@/components/MapaUbicacion.vue'
 
 const auth = useAuthStore()
 
@@ -180,21 +99,6 @@ const errorAvatar    = ref('')
 const guardando      = ref(false)
 const mensajeExito   = ref('')
 const mensajeError   = ref('')
-const guardandoUbicacion = ref(false)
-const mensajeUbicacionExito = ref('')
-const mensajeUbicacionError = ref('')
-const esProfesional = computed(() => auth.usuario?.rol === 'profesional' && !!auth.usuario?.profesional)
-const perfilProfesional = ref({
-  form: {
-    modalidad: 'hibrida',
-    direccion: '',
-    ciudad: '',
-    pais: 'UY',
-    latitud: null,
-    longitud: null,
-    horas_cancelacion: 24,
-  },
-})
 
 const iniciales = computed(() => {
   const nombre = auth.usuario?.name || ''
@@ -215,18 +119,6 @@ onMounted(() => {
   formulario.value.name                 = auth.usuario?.name || ''
   formulario.value.telefono             = auth.usuario?.telefono || ''
   formulario.value.notificaciones_email = auth.usuario?.notificaciones_email ?? true
-
-  if (auth.usuario?.profesional) {
-    perfilProfesional.value.form = {
-      modalidad: auth.usuario.profesional.modalidad || 'hibrida',
-      direccion: auth.usuario.profesional.direccion || '',
-      ciudad: auth.usuario.profesional.ciudad || '',
-      pais: auth.usuario.profesional.pais || 'UY',
-      latitud: auth.usuario.profesional.latitud ?? null,
-      longitud: auth.usuario.profesional.longitud ?? null,
-      horas_cancelacion: auth.usuario.profesional.horas_cancelacion ?? 24,
-    }
-  }
 })
 
 const TIPOS_IMAGEN = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
@@ -299,60 +191,5 @@ function actualizarStore(usuario) {
   localStorage.setItem('usuario', JSON.stringify(auth.usuario))
 }
 
-function mostrarCoordenadas(valor) {
-  const numero = Number(valor)
-  return Number.isFinite(numero) ? numero.toFixed(6) : '—'
-}
-
-async function usarUbicacionActual() {
-  mensajeUbicacionError.value = ''
-  mensajeUbicacionExito.value = ''
-
-  if (!navigator.geolocation) {
-    mensajeUbicacionError.value = 'Tu navegador no soporta geolocalización.'
-    return
-  }
-
-  navigator.geolocation.getCurrentPosition(
-    (posicion) => {
-      perfilProfesional.value.form.latitud = posicion.coords.latitude
-      perfilProfesional.value.form.longitud = posicion.coords.longitude
-      mensajeUbicacionExito.value = 'Ubicación actual detectada. Revisa el mapa y guardá los cambios.'
-    },
-    () => {
-      mensajeUbicacionError.value = 'No se pudo obtener tu ubicación actual.'
-    },
-    { enableHighAccuracy: true, timeout: 10000 }
-  )
-}
-
-async function guardarUbicacion() {
-  if (!auth.usuario?.profesional?.id) return
-
-  mensajeUbicacionExito.value = ''
-  mensajeUbicacionError.value = ''
-  guardandoUbicacion.value = true
-
-  try {
-    const payload = {
-      modalidad: perfilProfesional.value.form.modalidad,
-      direccion: perfilProfesional.value.form.modalidad === 'remota' ? null : perfilProfesional.value.form.direccion,
-      ciudad: perfilProfesional.value.form.modalidad === 'remota' ? null : perfilProfesional.value.form.ciudad,
-      pais: perfilProfesional.value.form.modalidad === 'remota' ? null : perfilProfesional.value.form.pais,
-      latitud: perfilProfesional.value.form.modalidad === 'remota' ? null : perfilProfesional.value.form.latitud,
-      longitud: perfilProfesional.value.form.modalidad === 'remota' ? null : perfilProfesional.value.form.longitud,
-      horas_cancelacion: perfilProfesional.value.form.horas_cancelacion,
-    }
-
-    const { data } = await axios.put(`/api/profesionales/${auth.usuario.profesional.id}`, payload)
-    auth.usuario.profesional = { ...auth.usuario.profesional, ...data }
-    localStorage.setItem('usuario', JSON.stringify(auth.usuario))
-    mensajeUbicacionExito.value = 'Ubicación del profesional actualizada correctamente.'
-  } catch (e) {
-    mensajeUbicacionError.value = e.response?.data?.message || 'No se pudo guardar la ubicación.'
-  } finally {
-    guardandoUbicacion.value = false
-  }
-}
 </script>
 

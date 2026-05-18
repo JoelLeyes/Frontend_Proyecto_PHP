@@ -1141,6 +1141,18 @@ p:last-child { margin-bottom: 0; }
 .toggle input:checked + .toggle__slider              { background: var(--color-primario); }
 .toggle input:checked + .toggle__slider::before      { transform: translateX(20px); }
 
+/* ===== Ubicación item (ServiciosView) ===== */
+.ubicacion-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: .875rem 1rem;
+  border: 1px solid var(--color-borde-suave);
+  border-radius: var(--radio-borde);
+  background: #fff;
+}
+
 /* ===== Responsive ===== */
 
 /* --- Tablet / panel lateral colapsado (900px) --- */
