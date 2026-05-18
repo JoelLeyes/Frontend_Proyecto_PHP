@@ -7,85 +7,7 @@
       </button>
     </div>
 
-    <!-- Configuración del profesional (solo visible al agregar servicio presencial/híbrido) -->
-    <div v-if="mostrarFormServicio && nuevoServicio.modalidad !== 'remota'" class="tarjeta form-nuevo-servicio">
-      <div class="perfil-seccion-cabecera">
-        <h3 class="perfil-seccion-titulo">Ubicación del encuentro</h3>
-        <span class="perfil-seccion-tag">Para servicios presenciales o híbridos</span>
-      </div>
-      <p class="perfil-seccion-desc">
-        Definí la ubicación donde atenderás al cliente. Se mostrará a los clientes al reservar.
-      </p>
-
-      <div class="campo">
-        <label>Modalidad</label>
-        <select v-model="configProf.form.modalidad">
-          <option value="presencial">Presencial</option>
-          <option value="remota">Remota</option>
-          <option value="hibrida">Híbrida</option>
-        </select>
-      </div>
-
-      <template v-if="configProf.form.modalidad !== 'remota'">
-        <div class="campo">
-          <label>Dirección</label>
-          <input v-model="configProf.form.direccion" placeholder="Ej: Av. 18 de Julio 1234" />
-        </div>
-        <div class="campo-fila">
-          <div class="campo">
-            <label>Ciudad</label>
-            <input v-model="configProf.form.ciudad" placeholder="Ej: Montevideo" />
-          </div>
-          <div class="campo">
-            <label>País</label>
-            <input v-model="configProf.form.pais" placeholder="Ej: UY" maxlength="3" />
-          </div>
-        </div>
-        <div class="perfil-mapa-bloque">
-          <MapaUbicacion
-            :latitud="configProf.form.latitud"
-            :longitud="configProf.form.longitud"
-            @update:latitud="configProf.form.latitud = $event"
-            @update:longitud="configProf.form.longitud = $event"
-            editable
-            titulo="Seleccioná la ubicación en el mapa"
-            subtitulo="Hacé clic en el punto exacto donde atenderás"
-            ayuda="También podés mover el marcador arrastrándolo una vez colocado."
-            height="320px"
-          />
-          <div class="perfil-mapa-acciones">
-            <button type="button" class="boton-secundario" @click="usarUbicacionActual">
-              📍 Usar mi ubicación actual
-            </button>
-            <div class="perfil-coordenadas">
-              <span>Lat: {{ mostrarCoordenadas(configProf.form.latitud) }}</span>
-              <span>Lng: {{ mostrarCoordenadas(configProf.form.longitud) }}</span>
-            </div>
-          </div>
-        </div>
-      </template>
-
-      <div v-else class="alerta alerta--info">
-        La modalidad remota no necesita una ubicación física.
-      </div>
-
-      <div class="campo" style="margin-top:1rem">
-        <label>Horas mínimas para cancelar</label>
-        <input v-model.number="configProf.form.horas_cancelacion" type="number" min="0" max="168" step="1" />
-        <small class="campo-ayuda">Tiempo mínimo de antelación que necesitás para cancelar una reserva.</small>
-      </div>
-
-      <p v-if="configProf.mensajeExito" class="alerta alerta--exito">{{ configProf.mensajeExito }}</p>
-      <p v-if="configProf.mensajeError"  class="alerta alerta--error">{{ configProf.mensajeError }}</p>
-
-      <div style="display:flex;justify-content:flex-end;margin-top:.5rem">
-        <button class="boton-principal" :disabled="configProf.guardando" @click="guardarConfigProf">
-          {{ configProf.guardando ? 'Guardando...' : 'Guardar configuración' }}
-        </button>
-      </div>
-    </div>
-
-    <!-- Formulario nuevo servicio -->
+    <!-- Formulario nuevo servicio (ubicación se despliega dentro si es presencial/híbrida) -->
     <div v-if="mostrarFormServicio" class="tarjeta form-nuevo-servicio">
       <h3 style="margin-bottom:1.25rem">Agregar servicio</h3>
       <p v-if="errorForm" class="alerta alerta--error">{{ errorForm }}</p>
@@ -118,7 +40,63 @@
             <input v-model.number="nuevoServicio.duracion_minutos" type="number" min="15" step="15" placeholder="60" required />
           </div>
         </div>
-        <div style="display:flex;justify-content:flex-end;gap:.75rem">
+
+        <!-- Ubicación: se despliega solo cuando es presencial o híbrida -->
+        <template v-if="nuevoServicio.modalidad !== 'remota'">
+          <hr style="margin:1.25rem 0;border:none;border-top:1px solid var(--color-borde-suave)" />
+          <div class="perfil-seccion-cabecera">
+            <h3 class="perfil-seccion-titulo">Ubicación del encuentro</h3>
+            <span class="perfil-seccion-tag">Presencial / Híbrida</span>
+          </div>
+          <p class="perfil-seccion-desc">
+            Definí la ubicación donde atenderás al cliente. Se mostrará al reservar.
+          </p>
+          <div class="campo">
+            <label>Dirección</label>
+            <input v-model="configProf.form.direccion" placeholder="Ej: Av. 18 de Julio 1234" />
+          </div>
+          <div class="campo-fila">
+            <div class="campo">
+              <label>Ciudad</label>
+              <input v-model="configProf.form.ciudad" placeholder="Ej: Montevideo" />
+            </div>
+            <div class="campo">
+              <label>País</label>
+              <input v-model="configProf.form.pais" placeholder="Ej: UY" maxlength="3" />
+            </div>
+          </div>
+          <div class="perfil-mapa-bloque">
+            <MapaUbicacion
+              :latitud="configProf.form.latitud"
+              :longitud="configProf.form.longitud"
+              @update:latitud="configProf.form.latitud = $event"
+              @update:longitud="configProf.form.longitud = $event"
+              editable
+              titulo="Seleccioná la ubicación en el mapa"
+              subtitulo="Hacé clic en el punto exacto donde atenderás"
+              ayuda="También podés mover el marcador arrastrándolo una vez colocado."
+              height="280px"
+            />
+            <div class="perfil-mapa-acciones">
+              <button type="button" class="boton-secundario" @click="usarUbicacionActual">
+                📍 Usar mi ubicación actual
+              </button>
+              <div class="perfil-coordenadas">
+                <span>Lat: {{ mostrarCoordenadas(configProf.form.latitud) }}</span>
+                <span>Lng: {{ mostrarCoordenadas(configProf.form.longitud) }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="campo" style="margin-top:1rem">
+            <label>Horas mínimas para cancelar</label>
+            <input v-model.number="configProf.form.horas_cancelacion" type="number" min="0" max="168" step="1" />
+            <small class="campo-ayuda">Antelación mínima para cancelar una reserva.</small>
+          </div>
+          <p v-if="configProf.mensajeExito" class="alerta alerta--exito">{{ configProf.mensajeExito }}</p>
+          <p v-if="configProf.mensajeError"  class="alerta alerta--error">{{ configProf.mensajeError }}</p>
+        </template>
+
+        <div style="display:flex;justify-content:flex-end;gap:.75rem;margin-top:1.25rem">
           <button type="button" class="boton-secundario" @click="mostrarFormServicio = false">Cancelar</button>
           <button type="submit" class="boton-principal" :disabled="guardando">
             {{ guardando ? 'Guardando...' : 'Guardar servicio' }}
@@ -583,6 +561,11 @@ async function crearServicio() {
   errorForm.value = ''
   guardando.value = true
   try {
+    // Si es presencial/híbrida, guardar ubicación del profesional primero
+    if (nuevoServicio.value.modalidad !== 'remota') {
+      configProf.value.form.modalidad = nuevoServicio.value.modalidad
+      await guardarConfigProf()
+    }
     const { data } = await axios.post(`/api/profesionales/${profesionalId}/servicios`, nuevoServicio.value)
     servicios.value.unshift(data)
     mostrarFormServicio.value = false
