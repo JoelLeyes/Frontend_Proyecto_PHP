@@ -7,8 +7,8 @@
       </button>
     </div>
 
-    <!-- Configuración del profesional -->
-    <div class="tarjeta form-nuevo-servicio">
+    <!-- Configuración del profesional (solo visible al agregar servicio presencial/híbrido) -->
+    <div v-if="mostrarFormServicio && nuevoServicio.modalidad !== 'remota'" class="tarjeta form-nuevo-servicio">
       <div class="perfil-seccion-cabecera">
         <h3 class="perfil-seccion-titulo">Ubicación del encuentro</h3>
         <span class="perfil-seccion-tag">Para servicios presenciales o híbridos</span>
@@ -687,100 +687,3 @@ async function activarPaquete(servicio, paquete) {
 onMounted(cargarServicios)
 </script>
 
-<style scoped>
-.form-nuevo-servicio { margin-bottom: 1.5rem; }
-
-/* Lista de servicios */
-.servicios-lista { display: flex; flex-direction: column; gap: 1rem; }
-
-.servicio-bloque {
-  background: #fff;
-  border: 1px solid var(--color-borde-suave);
-  border-radius: calc(var(--radio-borde) * 1.5);
-  overflow: hidden;
-  box-shadow: var(--sombra);
-}
-
-.servicio-bloque__cabecera {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1rem 1.25rem;
-  cursor: pointer;
-  transition: background .15s;
-  user-select: none;
-}
-.servicio-bloque__cabecera:hover { background: var(--color-fondo); }
-
-.servicio-bloque__info { flex: 1; min-width: 0; }
-.servicio-bloque__nombre { font-size: 1rem; font-weight: 700; margin-bottom: .2rem; }
-.servicio-bloque__meta { font-size: .8125rem; color: var(--color-texto-suave); text-transform: capitalize; }
-
-.servicio-bloque__acciones { display: flex; align-items: center; gap: .75rem; flex-shrink: 0; margin-left: 1rem; }
-.servicio-bloque__chevron { font-size: .9rem; color: var(--color-texto-suave); transition: transform .2s; }
-.servicio-bloque__chevron--abierto { transform: rotate(180deg); }
-
-/* Sección detalles (paquetes + ubicaciones) */
-.servicio-detalles {
-  border-top: 1px solid var(--color-borde-suave);
-  background: var(--color-fondo);
-}
-
-/* Tabs */
-.tabs-servicio {
-  display: flex;
-  gap: 0;
-  padding: 0 1.25rem;
-  border-bottom: 1px solid var(--color-borde-suave);
-}
-
-.tab-btn {
-  padding: 0.75rem 1rem;
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-weight: 500;
-  color: var(--color-texto-suave);
-  border-bottom: 2px solid transparent;
-  transition: all 0.2s;
-  font-size: 0.9rem;
-}
-
-.tab-btn:hover {
-  color: var(--color-texto-medio);
-}
-
-.tab-btn--activo {
-  color: #007bff;
-  border-bottom-color: #007bff;
-}
-
-.tab-content {
-  padding: 1.125rem 1.25rem;
-}
-
-/* Sección paquetes */
-.paquetes-seccion {
-  border-top: none;
-  padding: 0;
-  background: none;
-}
-.paquetes-seccion__cabecera {
-  display: flex; align-items: center; justify-content: space-between; margin-bottom: .375rem;
-}
-.paquetes-seccion__titulo { font-size: .8125rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--color-texto-suave); }
-.paquetes-seccion__ayuda { font-size: .8125rem; color: var(--color-texto-suave); margin-bottom: 1rem; line-height: 1.4; }
-
-.paquetes-tabla { overflow-x: auto; border-radius: var(--radio-borde); border: 1px solid var(--color-borde-suave); background: #fff; }
-.paquetes-vacio { font-size: .875rem; color: var(--color-texto-suave); padding: .75rem 0; display: flex; align-items: center; }
-
-.td-suave { color: var(--color-texto-suave); }
-.boton-sm  { padding: .35rem .75rem; font-size: .8125rem; }
-.boton-xs  { padding: .25rem .6rem; font-size: .8125rem; }
-.campo-ayuda { font-size: .75rem; color: var(--color-texto-suave); margin-top: .2rem; display: block; }
-
-/* Estado vacío */
-.estado-vacio { text-align: center; padding: 4rem 1rem; color: var(--color-texto-suave); }
-.estado-vacio__icono { font-size: 3rem; margin-bottom: 1rem; }
-.estado-vacio h3 { font-size: 1.25rem; color: var(--color-texto-medio); margin-bottom: .5rem; }
-</style>

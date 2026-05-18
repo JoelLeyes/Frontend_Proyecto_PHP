@@ -33,9 +33,3 @@
 <script setup>
 import NavBar from '@/components/NavBar.vue'
 </script>
-
-<style scoped>
-.auth-pagina {
-  min-height: calc(100vh - 60px);
-}
-</style>
