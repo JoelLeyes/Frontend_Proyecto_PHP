@@ -1,6 +1,18 @@
+/**
+ * Enrutador de la SPA.
+ *
+ * Layouts:
+ *   LayoutPublico  → páginas sin login (inicio, catálogo, detalle profesional)
+ *   LayoutAuth     → login y registro (fondo centrado)
+ *   LayoutPanel    → panel privado con sidebar (requiere auth)
+ *
+ * Guardias via meta:
+ *   requiereAuth: true  → redirige a 'iniciar-sesion' si no hay token
+ *   rol: 'profesional'  → redirige al 'panel' si el rol no coincide
+ */
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-//ssss
+
 const rutas = [
     {
         path: '/',
