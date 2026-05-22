@@ -14,7 +14,7 @@
 
       <!-- Logueado -->
       <template v-else>
-        <RouterLink class="navbar__link" :to="{ name: 'panel' }">Mi panel</RouterLink>
+        <RouterLink class="navbar__link navbar__link--panel" :to="{ name: 'panel' }">Mi panel</RouterLink>
 
         <!-- Perfil desplegable -->
         <div class="navbar__perfil" ref="perfilRef" @click="menuAbierto = !menuAbierto">

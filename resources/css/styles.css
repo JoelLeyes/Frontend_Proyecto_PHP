@@ -1574,6 +1574,33 @@ p:last-child { margin-bottom: 0; }
 
   /* Disponibilidad */
   .dispon-fila-2 { grid-template-columns: 1fr; }
+
+  /* NavBar — compactar para que no se aplaste en 375px */
+  .navbar__izquierda .navbar__link { display: none; }       /* Oculta "Profesionales" */
+  .navbar__link--panel              { display: none; }       /* Oculta "Mi panel" (está en el dropdown) */
+  .navbar__perfil-info              { display: none; }       /* Oculta nombre + chip de rol */
+  .navbar__chevron                  { display: none; }
+  .navbar__boton { padding: .4rem .75rem; font-size: .8125rem; }
+
+  /* Admin tabs — scroll horizontal en lugar de desbordarse */
+  .admin-tabs { overflow-x: auto; flex-wrap: nowrap; padding-bottom: .25rem; }
+  .admin-tab  { white-space: nowrap; font-size: .875rem; padding: .5rem .875rem; }
+
+  /* Tabla — celdas más compactas */
+  .tabla th,
+  .tabla td { padding: .5rem .625rem; font-size: .875rem; }
+
+  /* Panel nav horizontal — items más pequeños */
+  .layout-panel__nav a { padding: .5rem .75rem; font-size: .8125rem; }
+
+  /* Título de página */
+  .layout-panel__titulo-pagina { font-size: 1.25rem; }
+
+  /* Tarjetas de reseñas */
+  .tarjetas-estadisticas { grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+
+  /* Acciones en tabla — apilar verticalmente */
+  .acciones-fila { flex-direction: column; align-items: flex-start; gap: .375rem; }
 }
 
 /* --- Muy pequeño (400px) --- */
