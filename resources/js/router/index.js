@@ -64,6 +64,11 @@ const rutas = [
                 meta: { rol: 'profesional' },
             },
             {
+                path: 'reservas/:id/video',
+                name: 'sesion-video',
+                component: () => import('@/views/SesionVideoView.vue'),
+            },
+            {
                 path: 'paquetes',
                 name: 'mis-paquetes',
                 component: () => import('@/views/PaquetesView.vue'),

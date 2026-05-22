@@ -1454,6 +1454,49 @@ p:last-child { margin-bottom: 0; }
   filter: drop-shadow(0 6px 10px rgba(0,0,0,.25));
 }
 
+/* ===== Videollamada LiveKit ===== */
+.video-sala { display: flex; flex-direction: column; height: 100vh; background: #0f172a; color: #fff; }
+.video-sala__estado { display: flex; align-items: center; justify-content: center; flex: 1; }
+.video-sala__barra {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: .875rem 1.5rem; background: #1e293b; border-bottom: 1px solid #334155;
+  flex-shrink: 0;
+}
+.video-sala__titulo { font-weight: 600; font-size: 1rem; color: #e2e8f0; }
+.video-sala__controles { display: flex; gap: .75rem; }
+.video-btn {
+  padding: .5rem .875rem; border: none; border-radius: var(--radio-borde);
+  background: #334155; color: #fff; cursor: pointer; font-size: .9375rem;
+  transition: background .15s;
+}
+.video-btn:hover          { background: #475569; }
+.video-btn--apagado       { background: #64748b; opacity: .7; }
+.video-btn--peligro       { background: #dc2626; }
+.video-btn--peligro:hover { background: #b91c1c; }
+.video-sala__grilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1rem; padding: 1rem; flex: 1; overflow: auto;
+}
+.video-sala__participante {
+  position: relative; background: #1e293b; border-radius: .75rem;
+  overflow: hidden; aspect-ratio: 16/9;
+  display: flex; align-items: center; justify-content: center;
+}
+.video-sala__participante--espera { flex-direction: column; gap: .5rem; color: #94a3b8; }
+.video-sala__espera-icono { font-size: 2.5rem; }
+.video-sala__video { width: 100%; height: 100%; object-fit: cover; }
+.video-sala__nombre {
+  position: absolute; bottom: .5rem; left: .75rem;
+  background: rgba(0,0,0,.55); padding: .2rem .6rem;
+  border-radius: 9999px; font-size: .8125rem;
+}
+@media (max-width: 640px) {
+  .video-sala__grilla { grid-template-columns: 1fr; }
+  .video-sala__barra  { padding: .625rem 1rem; }
+  .video-btn          { padding: .4rem .625rem; font-size: .875rem; }
+}
+
 /* ===== Inicio ===== */
 .features-grilla {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));

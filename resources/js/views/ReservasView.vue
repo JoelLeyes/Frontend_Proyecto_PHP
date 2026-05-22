@@ -80,6 +80,15 @@
                   ⭐ Reseñar
                 </button>
 
+                <!-- Videollamada (reservas remotas confirmadas o pagadas) -->
+                <RouterLink
+                  v-if="puedeVideollamada(reserva)"
+                  :to="{ name: 'sesion-video', params: { id: reserva.id } }"
+                  class="boton-principal boton-xs"
+                >
+                  📹 Unirse
+                </RouterLink>
+
                 <!-- PROFESIONAL o CLIENTE: cancelar -->
                 <button
                   v-if="puedeCancelarse(reserva)"
@@ -286,8 +295,9 @@ function formatearFecha(f) {
 function puedeCancelarse(r)    { return ['pendiente', 'confirmada', 'pagada'].includes(r.estado) }
 function puedeReprogramarse(r) { return ['pendiente', 'confirmada'].includes(r.estado) }
 function puedeResenarse(r)     { return r.estado === 'finalizada' && !r.resena && !esProfesional.value }
+function puedeVideollamada(r)  { return r.modalidad === 'remota' && ['confirmada', 'pagada', 'en_curso'].includes(r.estado) }
 function tieneAcciones(r) {
-  return puedeCancelarse(r) || puedeReprogramarse(r) || puedeResenarse(r) || (esProfesional.value && r.estado === 'pendiente')
+  return puedeCancelarse(r) || puedeReprogramarse(r) || puedeResenarse(r) || puedeVideollamada(r) || (esProfesional.value && r.estado === 'pendiente')
 }
 
 // ── Carga ─────────────────────────────────────────────────────────────────────
