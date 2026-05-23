@@ -72,7 +72,9 @@ async function inicializarBotones() {
     },
 
     onError(err) {
-      errorMsg.value = 'Ocurrió un error en el proceso de pago.'
+      if (!errorMsg.value) {
+        errorMsg.value = 'Ocurrió un error en el proceso de pago.'
+      }
       emit('error', errorMsg.value)
       console.error('PayPal error:', err)
     },

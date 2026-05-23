@@ -89,6 +89,15 @@
                   📹 Unirse
                 </RouterLink>
 
+                <!-- CLIENTE: pagar reserva confirmada sin paquete -->
+                <button
+                  v-if="puedePagar(reserva)"
+                  class="boton-principal boton-xs"
+                  @click="abrirPago(reserva)"
+                >
+                  💳 Pagar
+                </button>
+
                 <!-- PROFESIONAL o CLIENTE: cancelar -->
                 <button
                   v-if="puedeCancelarse(reserva)"
@@ -251,6 +260,32 @@
       </div>
     </Teleport>
 
+    <!-- ══ Modal pagar ══ -->
+    <Teleport to="body">
+      <div v-if="modalPago.abierto" class="modal-overlay" @click.self="modalPago.abierto = false">
+        <div class="modal">
+          <div class="modal__cabecera">
+            <div>
+              <h3 class="modal__titulo">Pagar reserva</h3>
+              <p class="modal__subtitulo">{{ modalPago.reserva?.servicio?.nombre }}</p>
+            </div>
+            <button class="modal__cerrar" @click="modalPago.abierto = false">✕</button>
+          </div>
+          <div class="modal__cuerpo">
+            <p style="margin-bottom:1rem;font-size:.9375rem;color:var(--color-texto-suave)">
+              {{ formatearFecha(modalPago.reserva?.fecha_hora) }}
+            </p>
+            <BotonPago
+              v-if="modalPago.reserva"
+              tipo="reserva"
+              :entidad-id="modalPago.reserva.id"
+              @pagado="pagoExitoso"
+            />
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
   </div>
 </template>
 
@@ -258,6 +293,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useReservasStore } from '@/stores/reservas'
+import BotonPago from '@/components/BotonPago.vue'
 import axios from 'axios'
 
 const auth  = useAuthStore()
@@ -296,8 +332,9 @@ function puedeCancelarse(r)    { return ['pendiente', 'confirmada', 'pagada'].in
 function puedeReprogramarse(r) { return ['pendiente', 'confirmada'].includes(r.estado) }
 function puedeResenarse(r)     { return r.estado === 'finalizada' && !r.resena && !esProfesional.value }
 function puedeVideollamada(r)  { return r.modalidad === 'remota' && ['confirmada', 'pagada', 'en_curso'].includes(r.estado) }
+function puedePagar(r)         { return !esProfesional.value && r.estado === 'confirmada' && !r.paquete_cliente_id }
 function tieneAcciones(r) {
-  return puedeCancelarse(r) || puedeReprogramarse(r) || puedeResenarse(r) || puedeVideollamada(r) || (esProfesional.value && r.estado === 'pendiente')
+  return puedeCancelarse(r) || puedeReprogramarse(r) || puedeResenarse(r) || puedeVideollamada(r) || puedePagar(r) || (esProfesional.value && r.estado === 'pendiente')
 }
 
 // ── Carga ─────────────────────────────────────────────────────────────────────
@@ -428,13 +465,25 @@ async function confirmarResena() {
       comentario: r.comentario || null,
     })
     r.exito = '✅ Tu reseña fue publicada.'
-    await cargarReservas(store.paginacion?.current_page || 1)
+    cargarReservas(store.paginacion?.current_page || 1)
     setTimeout(() => { r.abierto = false }, 900)
   } catch (e) {
     r.error = e.response?.data?.error || 'No se pudo enviar la reseña.'
   } finally {
     r.enviando = false
   }
+}
+
+// ── Modal pagar ───────────────────────────────────────────────────────────────
+const modalPago = ref({ abierto: false, reserva: null })
+
+function abrirPago(reserva) {
+  modalPago.value = { abierto: true, reserva }
+}
+
+async function pagoExitoso() {
+  modalPago.value.abierto = false
+  cargarReservas(store.paginacion?.current_page || 1)
 }
 
 onMounted(() => cargarReservas())
