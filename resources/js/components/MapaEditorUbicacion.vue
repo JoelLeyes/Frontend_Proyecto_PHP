@@ -59,9 +59,9 @@
       </div>
     </div>
 
-    <!-- Tab: Nueva ubicación -->
+    <!-- Tab: Nueva ubicación (con mapa) -->
     <div v-show="tabActivo === 'nueva'" class="tab-content">
-      <div v-if="mapsDisponibles" class="mapa-container">
+      <div class="mapa-container">
         <!-- Google Map -->
         <div ref="mapContainer" class="mapa-google" style="height: 400px; width: 100%"></div>
         
@@ -71,12 +71,8 @@
         </p>
       </div>
 
-      <div v-else class="alerta alerta--info" style="margin-bottom: 1rem;">
-        Google Maps no está disponible en esta instalación. Podés cargar la ubicación manualmente con latitud y longitud.
-      </div>
-
       <!-- Formulario de nueva ubicación -->
-      <div v-if="formulario.ubicacionSeleccionada || !mapsDisponibles" class="formulario-ubicacion">
+      <div v-if="formulario.ubicacionSeleccionada" class="formulario-ubicacion">
         <div class="campo">
           <label>Nombre de la ubicación *</label>
           <input 
@@ -94,9 +90,8 @@
               v-model="formulario.latitud"
               type="number"
               step="0.000001"
-              :readonly="mapsDisponibles"
-              :class="mapsDisponibles ? 'campo-deshabilitado' : ''"
-              placeholder="-34.6037">
+              readonly
+              class="campo-deshabilitado">
           </div>
           <div class="campo">
             <label>Longitud</label>
@@ -104,9 +99,8 @@
               v-model="formulario.longitud"
               type="number"
               step="0.000001"
-              :readonly="mapsDisponibles"
-              :class="mapsDisponibles ? 'campo-deshabilitado' : ''"
-              placeholder="-58.3816">
+              readonly
+              class="campo-deshabilitado">
           </div>
         </div>
 
@@ -200,7 +194,7 @@ const props = defineProps({
   },
   googleMapsApiKey: {
     type: String,
-    required: false,
+    required: true, // Debe ser proporcionado por componente padre
   },
 })
 
@@ -209,7 +203,6 @@ const tabActivo = ref('guardadas')
 const cargandoUbicaciones = ref(false)
 const ubicacionesGuardadas = ref([])
 const ubicacionesServicio = ref([])
-const mapsDisponibles = computed(() => Boolean(props.googleMapsApiKey && window.google && window.google.maps))
 
 // ─── Mapa y marker ────────────────────────────────────────────────────────
 const mapContainer = ref(null)
@@ -270,7 +263,7 @@ async function cargarUbicacionesServicio() {
 }
 
 async function inicializarMapa() {
-  if (!mapContainer.value || !mapsDisponibles.value) return
+  if (!mapContainer.value) return
 
   // Crear mapa centrado en Buenos Aires por defecto
   const mapOptions = {
