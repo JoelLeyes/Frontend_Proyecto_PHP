@@ -21,6 +21,14 @@ export const useAuthStore = defineStore('auth', () => {
         axios.defaults.headers.common['Authorization'] = `Bearer ${tokenAcceso}`
     }
 
+    function limpiarSesionLocal() {
+        usuario.value = null
+        token.value   = null
+        localStorage.removeItem('usuario')
+        localStorage.removeItem('token')
+        delete axios.defaults.headers.common['Authorization']
+    }
+
     async function iniciarSesion(email, password) {
         const { data } = await axios.post('/api/auth/iniciar-sesion', { email, password })
         guardarSesion(data.usuario, data.token)
@@ -33,14 +41,25 @@ export const useAuthStore = defineStore('auth', () => {
         return data.usuario
     }
 
-    async function cerrarSesion() {
-        await axios.post('/api/auth/cerrar-sesion').catch(() => {})
-        usuario.value = null
-        token.value   = null
-        localStorage.removeItem('usuario')
-        localStorage.removeItem('token')
-        delete axios.defaults.headers.common['Authorization']
+    async function completarSesionOAuth(tokenAcceso) {
+        token.value = tokenAcceso
+        localStorage.setItem('token', tokenAcceso)
+        axios.defaults.headers.common['Authorization'] = `Bearer ${tokenAcceso}`
+
+        try {
+            const { data } = await axios.get('/api/auth/perfil')
+            guardarSesion(data, tokenAcceso)
+            return data
+        } catch (error) {
+            limpiarSesionLocal()
+            throw error
+        }
     }
 
-    return { usuario, token, estaLogueado, iniciarSesion, registrar, cerrarSesion }
+    async function cerrarSesion() {
+        await axios.post('/api/auth/cerrar-sesion').catch(() => {})
+        limpiarSesionLocal()
+    }
+
+    return { usuario, token, estaLogueado, iniciarSesion, registrar, completarSesionOAuth, cerrarSesion }
 })

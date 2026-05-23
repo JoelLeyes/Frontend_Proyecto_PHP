@@ -6,6 +6,35 @@
       <p>Ingresá con tu cuenta para continuar</p>
     </div>
 
+    <div class="auth-social">
+      <button
+        type="button"
+        class="boton-secundario boton-bloque auth-social__boton auth-social__boton--google"
+        :disabled="cargando"
+        @click="iniciarOAuth('google')"
+      >
+        Continuar con Google
+      </button>
+      <button
+        type="button"
+        class="boton-secundario boton-bloque auth-social__boton auth-social__boton--github"
+        :disabled="cargando"
+        @click="iniciarOAuth('github')"
+      >
+        Continuar con GitHub
+      </button>
+      <button
+        type="button"
+        class="boton-secundario boton-bloque auth-social__boton auth-social__boton--facebook"
+        :disabled="cargando"
+        @click="iniciarOAuth('facebook')"
+      >
+        Continuar con Facebook
+      </button>
+    </div>
+
+    <div class="auth-formulario__divider">o con tu email</div>
+
     <form @submit.prevent="manejarInicioSesion">
       <div class="campo">
         <label>Email</label>
@@ -32,16 +61,56 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import axios from 'axios'
 import { useAuthStore } from '@/stores/auth'
 
 const auth      = useAuthStore()
 const enrutador = useRouter()
+const ruta      = useRoute()
 
 const formulario = ref({ email: '', password: '' })
 const error      = ref('')
 const cargando   = ref(false)
+
+function obtenerUrlOAuth(proveedor) {
+  const baseUrl = new URL(axios.defaults.baseURL || window.location.origin, window.location.origin)
+  if (baseUrl.pathname.replace(/\/+$/, '').endsWith('/api')) {
+    baseUrl.pathname = baseUrl.pathname.replace(/\/api\/?$/, '/')
+  }
+
+  return new URL(`auth/${proveedor}/redirect`, baseUrl).toString()
+}
+
+function iniciarOAuth(proveedor) {
+  window.location.href = obtenerUrlOAuth(proveedor)
+}
+
+onMounted(async () => {
+  const tokenOAuth = ruta.query.oauth_token?.toString()
+  const errorOAuth = ruta.query.oauth_error?.toString()
+
+  if (errorOAuth) {
+    error.value = errorOAuth
+  }
+
+  if (!tokenOAuth) {
+    return
+  }
+
+  cargando.value = true
+  error.value = ''
+
+  try {
+    await auth.completarSesionOAuth(tokenOAuth)
+    enrutador.push({ name: 'panel' })
+  } catch (e) {
+    error.value = e.response?.data?.error || errorOAuth || 'No se pudo completar el inicio de sesión social.'
+  } finally {
+    cargando.value = false
+  }
+})
 
 async function manejarInicioSesion() {
   error.value    = ''
