@@ -184,7 +184,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted } from 'vue'
 import axios from 'axios'
 
 const props = defineProps({
@@ -232,11 +232,57 @@ const markerUbicacion = ref({
   pais: '',
 })
 
+let googleMapsLoaderPromise = null
+
+function cargarGoogleMaps() {
+  if (window.google?.maps) {
+    return Promise.resolve()
+  }
+
+  if (!props.googleMapsApiKey) {
+    return Promise.reject(new Error('Falta la API key de Google Maps.'))
+  }
+
+  if (googleMapsLoaderPromise) {
+    return googleMapsLoaderPromise
+  }
+
+  googleMapsLoaderPromise = new Promise((resolve, reject) => {
+    const scriptId = 'google-maps-js'
+    const scriptExistente = document.getElementById(scriptId)
+
+    if (scriptExistente) {
+      scriptExistente.addEventListener('load', () => resolve(), { once: true })
+      scriptExistente.addEventListener('error', () => reject(new Error('No se pudo cargar Google Maps.')), { once: true })
+      return
+    }
+
+    const script = document.createElement('script')
+    script.id = scriptId
+    script.async = true
+    script.defer = true
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(props.googleMapsApiKey)}&libraries=places`
+    script.onload = () => resolve()
+    script.onerror = () => reject(new Error('No se pudo cargar Google Maps.'))
+
+    document.head.appendChild(script)
+  })
+
+  return googleMapsLoaderPromise
+}
+
 // ─── Ciclo de vida ────────────────────────────────────────────────────────
 onMounted(async () => {
   await cargarUbicaciones()
   await cargarUbicacionesServicio()
-  await inicializarMapa()
+
+  try {
+    await cargarGoogleMaps()
+    await inicializarMapa()
+  } catch (error) {
+    console.error('Error cargando Google Maps:', error)
+    formulario.value.error = 'No se pudo cargar Google Maps. Revisá la API key del componente.'
+  }
 })
 
 // ─── Funciones principales ────────────────────────────────────────────────
