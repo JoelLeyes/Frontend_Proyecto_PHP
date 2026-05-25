@@ -98,6 +98,15 @@
                   💳 Pagar
                 </button>
 
+                <!-- CLIENTE: ver ubicación de reserva presencial pagada -->
+                <button
+                  v-if="puedeVerUbicacion(reserva)"
+                  class="boton-secundario boton-xs"
+                  @click="abrirUbicacion(reserva)"
+                >
+                  📍 Ubicación
+                </button>
+
                 <!-- PROFESIONAL o CLIENTE: cancelar -->
                 <button
                   v-if="puedeCancelarse(reserva)"
@@ -260,6 +269,36 @@
       </div>
     </Teleport>
 
+    <!-- ══ Modal ubicación ══ -->
+    <Teleport to="body">
+      <div v-if="modalUbicacion.abierto" class="modal-overlay" @click.self="modalUbicacion.abierto = false">
+        <div class="modal">
+          <div class="modal__cabecera">
+            <div>
+              <h3 class="modal__titulo">Lugar del encuentro</h3>
+              <p class="modal__subtitulo">{{ modalUbicacion.reserva?.servicio?.nombre }}</p>
+            </div>
+            <button class="modal__cerrar" @click="modalUbicacion.abierto = false">✕</button>
+          </div>
+          <div class="modal__cuerpo">
+            <p style="margin-bottom:.75rem;font-size:.9375rem;color:var(--color-texto-suave)">
+              {{ formatearFecha(modalUbicacion.reserva?.fecha_hora) }}
+            </p>
+            <MapaUbicacion
+              v-if="modalUbicacion.reserva?.servicio?.ubicacion"
+              :latitud="modalUbicacion.reserva.servicio.ubicacion.latitud"
+              :longitud="modalUbicacion.reserva.servicio.ubicacion.longitud"
+              :subtitulo="modalUbicacion.reserva.servicio.ubicacion.direccion || 'Punto fijado por el profesional'"
+              height="260px"
+            />
+          </div>
+          <div class="modal__pie">
+            <button class="boton-secundario" @click="modalUbicacion.abierto = false">Cerrar</button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
     <!-- ══ Modal pagar ══ -->
     <Teleport to="body">
       <div v-if="modalPago.abierto" class="modal-overlay" @click.self="modalPago.abierto = false">
@@ -294,6 +333,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useReservasStore } from '@/stores/reservas'
 import BotonPago from '@/components/BotonPago.vue'
+import MapaUbicacion from '@/components/MapaUbicacion.vue'
 import axios from 'axios'
 
 const auth  = useAuthStore()
@@ -333,8 +373,9 @@ function puedeReprogramarse(r) { return ['pendiente', 'confirmada'].includes(r.e
 function puedeResenarse(r)     { return r.estado === 'finalizada' && !r.resena && !esProfesional.value }
 function puedeVideollamada(r)  { return r.modalidad === 'remota' && ['confirmada', 'pagada', 'en_curso'].includes(r.estado) }
 function puedePagar(r)         { return !esProfesional.value && r.estado === 'confirmada' && !r.paquete_cliente_id }
+function puedeVerUbicacion(r)  { return !esProfesional.value && r.modalidad === 'presencial' && ['pagada', 'en_curso', 'finalizada'].includes(r.estado) && r.servicio?.ubicacion }
 function tieneAcciones(r) {
-  return puedeCancelarse(r) || puedeReprogramarse(r) || puedeResenarse(r) || puedeVideollamada(r) || puedePagar(r) || (esProfesional.value && r.estado === 'pendiente')
+  return puedeCancelarse(r) || puedeReprogramarse(r) || puedeResenarse(r) || puedeVideollamada(r) || puedePagar(r) || puedeVerUbicacion(r) || (esProfesional.value && r.estado === 'pendiente')
 }
 
 // ── Carga ─────────────────────────────────────────────────────────────────────
@@ -472,6 +513,13 @@ async function confirmarResena() {
   } finally {
     r.enviando = false
   }
+}
+
+// ── Modal ubicación ───────────────────────────────────────────────────────────
+const modalUbicacion = ref({ abierto: false, reserva: null })
+
+function abrirUbicacion(reserva) {
+  modalUbicacion.value = { abierto: true, reserva }
 }
 
 // ── Modal pagar ───────────────────────────────────────────────────────────────

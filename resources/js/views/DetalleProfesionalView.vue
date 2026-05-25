@@ -21,15 +21,6 @@
           <span class="modalidad-chip">{{ profesional.modalidad }}</span>
         </div>
         <p v-if="profesional.bio" class="detalle-info__bio">{{ profesional.bio }}</p>
-        <div v-if="profesional.modalidad !== 'remota' && profesional.latitud && profesional.longitud" class="detalle-mapa">
-          <MapaUbicacion
-            :latitud="profesional.latitud"
-            :longitud="profesional.longitud"
-            titulo="Lugar del encuentro"
-            :subtitulo="profesional.direccion || 'Ubicación definida por el profesional'"
-            height="240px"
-          />
-        </div>
       </div>
     </div>
 
