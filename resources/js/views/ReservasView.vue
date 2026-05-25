@@ -295,10 +295,10 @@
               {{ formatearFecha(modalUbicacion.reserva?.fecha_hora) }}
             </p>
             <MapaUbicacion
-              v-if="modalUbicacion.reserva?.servicio?.ubicacion"
-              :latitud="modalUbicacion.reserva.servicio.ubicacion.latitud"
-              :longitud="modalUbicacion.reserva.servicio.ubicacion.longitud"
-              :subtitulo="modalUbicacion.reserva.servicio.ubicacion.direccion || 'Punto fijado por el profesional'"
+              v-if="ubicacionDeReserva(modalUbicacion.reserva)"
+              :latitud="ubicacionDeReserva(modalUbicacion.reserva).latitud"
+              :longitud="ubicacionDeReserva(modalUbicacion.reserva).longitud"
+              :subtitulo="ubicacionDeReserva(modalUbicacion.reserva).direccion || 'Punto fijado por el profesional'"
               height="260px"
             />
           </div>
@@ -383,7 +383,14 @@ function puedeReprogramarse(r) { return ['pendiente', 'confirmada'].includes(r.e
 function puedeResenarse(r)     { return r.estado === 'finalizada' && !r.resena && !esProfesional.value }
 function puedeVideollamada(r)  { return r.modalidad === 'remota' && ['confirmada', 'pagada', 'en_curso'].includes(r.estado) }
 function puedePagar(r)         { return !esProfesional.value && r.estado === 'confirmada' && !r.paquete_cliente_id }
-function puedeVerUbicacion(r)  { return !esProfesional.value && r.modalidad === 'presencial' && ['pagada', 'en_curso', 'finalizada'].includes(r.estado) && r.servicio?.ubicacion }
+function ubicacionDeReserva(r) {
+  const ub = r.servicio?.ubicacion
+  if (ub?.latitud && ub?.longitud) return ub
+  const prof = r.servicio?.profesional
+  if (prof?.latitud && prof?.longitud) return { latitud: prof.latitud, longitud: prof.longitud, direccion: prof.direccion }
+  return null
+}
+function puedeVerUbicacion(r)  { return !esProfesional.value && r.modalidad === 'presencial' && !['cancelada', 'no_asistida'].includes(r.estado) && ubicacionDeReserva(r) }
 function puedeFinalizarse(r)   { return esProfesional.value && ['confirmada', 'pagada', 'en_curso'].includes(r.estado) }
 function tieneAcciones(r) {
   return puedeCancelarse(r) || puedeReprogramarse(r) || puedeResenarse(r) || puedeVideollamada(r) || puedePagar(r) || puedeVerUbicacion(r) || puedeFinalizarse(r) || (esProfesional.value && r.estado === 'pendiente')
