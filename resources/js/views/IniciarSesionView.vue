@@ -76,34 +76,6 @@ const cargando   = ref(false)
 
 function obtenerUrlOAuth(proveedor) {
   const baseUrl = new URL(axios.defaults.baseURL || window.location.origin, window.location.origin)
-  const callbackUrl = new URL(`/api/auth/${proveedor}/callback`, baseUrl).toString()
-
-  if (proveedor === 'google' && import.meta.env.VITE_GOOGLE_CLIENT_ID) {
-    const url = new URL('https://accounts.google.com/o/oauth2/v2/auth')
-    url.searchParams.set('client_id', import.meta.env.VITE_GOOGLE_CLIENT_ID)
-    url.searchParams.set('redirect_uri', callbackUrl)
-    url.searchParams.set('response_type', 'code')
-    url.searchParams.set('scope', 'openid email profile')
-    url.searchParams.set('prompt', 'select_account')
-    return url.toString()
-  }
-
-  if (proveedor === 'github' && import.meta.env.VITE_GITHUB_CLIENT_ID) {
-    const url = new URL('https://github.com/login/oauth/authorize')
-    url.searchParams.set('client_id', import.meta.env.VITE_GITHUB_CLIENT_ID)
-    url.searchParams.set('redirect_uri', callbackUrl)
-    url.searchParams.set('scope', 'read:user user:email')
-    return url.toString()
-  }
-
-  if (proveedor === 'facebook' && import.meta.env.VITE_FACEBOOK_CLIENT_ID) {
-    const url = new URL('https://www.facebook.com/v19.0/dialog/oauth')
-    url.searchParams.set('client_id', import.meta.env.VITE_FACEBOOK_CLIENT_ID)
-    url.searchParams.set('redirect_uri', callbackUrl)
-    url.searchParams.set('response_type', 'code')
-    url.searchParams.set('scope', 'email,public_profile')
-    return url.toString()
-  }
 
   return new URL(`/api/auth/${proveedor}/redirect`, baseUrl).toString()
 }
