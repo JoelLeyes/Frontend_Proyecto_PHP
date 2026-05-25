@@ -65,7 +65,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Room, RoomEvent, Track } from 'livekit-client'
 import axios from 'axios'
@@ -101,26 +101,35 @@ onMounted(async () => {
     sala.on(RoomEvent.TrackSubscribed, (track, pub, participante) => {
       actualizarParticipantes()
       if (track.kind === Track.Kind.Video) {
-        setTimeout(() => asignarVideoRemoto(videoRefs[participante.identity], participante), 100)
+        nextTick(() => asignarVideoRemoto(videoRefs[participante.identity], participante))
       }
     })
     sala.on(RoomEvent.TrackUnsubscribed, () => actualizarParticipantes())
+
+    // Track local publicado después del connect
+    sala.on(RoomEvent.LocalTrackPublished, async (pub) => {
+      if (pub.kind === Track.Kind.Video && pub.track) {
+        await nextTick()
+        if (videoLocal.value) pub.track.attach(videoLocal.value)
+      }
+    })
 
     await sala.connect(data.ws_url, data.token, {
       audio: true,
       video: true,
     })
 
-    // Video local
-    const tracksCam = sala.localParticipant.videoTrackPublications
-    for (const [, pub] of tracksCam) {
+    // Mostrar UI primero para que el <video> exista en el DOM
+    actualizarParticipantes()
+    estado.value = 'conectado'
+    await nextTick()
+
+    // Ahora sí adjuntar video local (puede que ya esté publicado)
+    for (const [, pub] of sala.localParticipant.videoTrackPublications) {
       if (pub.track && videoLocal.value) {
         pub.track.attach(videoLocal.value)
       }
     }
-
-    actualizarParticipantes()
-    estado.value = 'conectado'
 
   } catch (e) {
     mensajeError.value = e.response?.data?.error || 'No se pudo conectar a la videollamada.'
