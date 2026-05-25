@@ -15,22 +15,6 @@
       >
         Continuar con Google
       </button>
-      <button
-        type="button"
-        class="boton-secundario boton-bloque auth-social__boton auth-social__boton--github"
-        :disabled="cargando"
-        @click="iniciarOAuth('github')"
-      >
-        Continuar con GitHub
-      </button>
-      <button
-        type="button"
-        class="boton-secundario boton-bloque auth-social__boton auth-social__boton--facebook"
-        :disabled="cargando"
-        @click="iniciarOAuth('facebook')"
-      >
-        Continuar con Facebook
-      </button>
     </div>
 
     <div class="auth-formulario__divider">o con tu email</div>

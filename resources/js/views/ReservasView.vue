@@ -107,6 +107,16 @@
                   📍 Ubicación
                 </button>
 
+                <!-- PROFESIONAL: finalizar manualmente -->
+                <button
+                  v-if="puedeFinalizarse(reserva)"
+                  class="boton-secundario boton-xs"
+                  :disabled="procesando === reserva.id"
+                  @click="finalizar(reserva)"
+                >
+                  ✓ Finalizar
+                </button>
+
                 <!-- PROFESIONAL o CLIENTE: cancelar -->
                 <button
                   v-if="puedeCancelarse(reserva)"
@@ -374,8 +384,9 @@ function puedeResenarse(r)     { return r.estado === 'finalizada' && !r.resena &
 function puedeVideollamada(r)  { return r.modalidad === 'remota' && ['confirmada', 'pagada', 'en_curso'].includes(r.estado) }
 function puedePagar(r)         { return !esProfesional.value && r.estado === 'confirmada' && !r.paquete_cliente_id }
 function puedeVerUbicacion(r)  { return !esProfesional.value && r.modalidad === 'presencial' && ['pagada', 'en_curso', 'finalizada'].includes(r.estado) && r.servicio?.ubicacion }
+function puedeFinalizarse(r)   { return esProfesional.value && ['confirmada', 'pagada', 'en_curso'].includes(r.estado) }
 function tieneAcciones(r) {
-  return puedeCancelarse(r) || puedeReprogramarse(r) || puedeResenarse(r) || puedeVideollamada(r) || puedePagar(r) || puedeVerUbicacion(r) || (esProfesional.value && r.estado === 'pendiente')
+  return puedeCancelarse(r) || puedeReprogramarse(r) || puedeResenarse(r) || puedeVideollamada(r) || puedePagar(r) || puedeVerUbicacion(r) || puedeFinalizarse(r) || (esProfesional.value && r.estado === 'pendiente')
 }
 
 // ── Carga ─────────────────────────────────────────────────────────────────────
@@ -400,6 +411,19 @@ async function confirmar(reserva) {
     await store.confirmarReserva(reserva.id)
   } catch (e) {
     alert(e.response?.data?.error || 'No se pudo confirmar.')
+  } finally {
+    procesando.value = null
+  }
+}
+
+// ── Finalizar ─────────────────────────────────────────────────────────────────
+async function finalizar(reserva) {
+  if (!confirm(`¿Marcar como finalizada la reserva de ${reserva.cliente?.name}?`)) return
+  procesando.value = reserva.id
+  try {
+    await store.finalizarReserva(reserva.id)
+  } catch (e) {
+    alert(e.response?.data?.error || 'No se pudo finalizar la reserva.')
   } finally {
     procesando.value = null
   }
