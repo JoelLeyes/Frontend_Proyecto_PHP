@@ -456,6 +456,50 @@ p:last-child { margin-bottom: 0; }
   background-color: #eff6ff;
 }
 
+.oauth-rol-opciones {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.oauth-rol-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 1.25rem 1rem;
+  border: 2px solid var(--color-borde);
+  border-radius: var(--radio-md);
+  background: var(--color-superficie);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  text-align: center;
+}
+
+.oauth-rol-btn:hover {
+  border-color: var(--color-primario);
+  background: #f0f4ff;
+}
+
+.oauth-rol-btn--activo {
+  border-color: var(--color-primario);
+  background: #eef2ff;
+}
+
+.oauth-rol-btn__icono {
+  font-size: 2rem;
+}
+
+.oauth-rol-btn strong {
+  font-size: 0.9375rem;
+  color: var(--color-texto);
+}
+
+.oauth-rol-btn small {
+  font-size: 0.8125rem;
+  color: var(--color-texto-suave);
+}
+
 /* Selector de rol (tarjetas clickeables) */
 .auth-rol-selector {
   display: grid;

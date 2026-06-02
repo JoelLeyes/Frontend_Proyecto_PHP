@@ -41,6 +41,53 @@
       <RouterLink :to="{ name: 'registrarse' }">Registrate gratis</RouterLink>
     </p>
 
+    <!-- Modal: elegir rol para cuenta nueva de Google -->
+    <Teleport to="body">
+      <div v-if="modalRol.abierto" class="modal-overlay">
+        <div class="modal">
+          <div class="modal__cabecera">
+            <div>
+              <h3 class="modal__titulo">¡Bienvenido!</h3>
+              <p class="modal__subtitulo">¿Cómo querés usar la plataforma?</p>
+            </div>
+          </div>
+          <div class="modal__cuerpo">
+            <p style="margin-bottom:1.25rem;font-size:.9375rem;color:var(--color-texto-suave)">
+              Elegí tu tipo de cuenta. Esta decisión no se puede cambiar después.
+            </p>
+            <div class="oauth-rol-opciones">
+              <button
+                :class="['oauth-rol-btn', modalRol.rolSeleccionado === 'cliente' && 'oauth-rol-btn--activo']"
+                @click="modalRol.rolSeleccionado = 'cliente'"
+              >
+                <span class="oauth-rol-btn__icono">👤</span>
+                <strong>Soy cliente</strong>
+                <small>Busco profesionales y reservo turnos</small>
+              </button>
+              <button
+                :class="['oauth-rol-btn', modalRol.rolSeleccionado === 'profesional' && 'oauth-rol-btn--activo']"
+                @click="modalRol.rolSeleccionado = 'profesional'"
+              >
+                <span class="oauth-rol-btn__icono">💼</span>
+                <strong>Soy profesional</strong>
+                <small>Ofrezco servicios y gestiono mi agenda</small>
+              </button>
+            </div>
+            <p v-if="modalRol.error" class="alerta alerta--error" style="margin-top:1rem">{{ modalRol.error }}</p>
+          </div>
+          <div class="modal__pie">
+            <button
+              class="boton-principal boton-bloque"
+              :disabled="!modalRol.rolSeleccionado || modalRol.enviando"
+              @click="completarRegistroOAuth"
+            >
+              {{ modalRol.enviando ? 'Creando cuenta...' : 'Continuar' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
   </div>
 </template>
 
@@ -58,9 +105,16 @@ const formulario = ref({ email: '', password: '' })
 const error      = ref('')
 const cargando   = ref(false)
 
+const modalRol = ref({
+  abierto: false,
+  pendingToken: '',
+  rolSeleccionado: '',
+  enviando: false,
+  error: '',
+})
+
 function obtenerUrlOAuth(proveedor) {
   const baseUrl = new URL(axios.defaults.baseURL || window.location.origin, window.location.origin)
-
   return new URL(`/api/auth/${proveedor}/redirect`, baseUrl).toString()
 }
 
@@ -69,29 +123,51 @@ function iniciarOAuth(proveedor) {
 }
 
 onMounted(async () => {
-  const tokenOAuth = ruta.query.oauth_token?.toString()
-  const errorOAuth = ruta.query.oauth_error?.toString()
+  const tokenOAuth   = ruta.query.oauth_token?.toString()
+  const errorOAuth   = ruta.query.oauth_error?.toString()
+  const pendingToken = ruta.query.oauth_pending?.toString()
 
   if (errorOAuth) {
     error.value = errorOAuth
-  }
-
-  if (!tokenOAuth) {
     return
   }
 
-  cargando.value = true
-  error.value = ''
+  // Usuario nuevo con Google: pedir que elija rol
+  if (pendingToken) {
+    modalRol.value = { abierto: true, pendingToken, rolSeleccionado: '', enviando: false, error: '' }
+    return
+  }
 
+  if (!tokenOAuth) return
+
+  // Usuario existente con Google: completar sesión directamente
+  cargando.value = true
   try {
     await auth.completarSesionOAuth(tokenOAuth)
     enrutador.push({ name: 'panel' })
   } catch (e) {
-    error.value = e.response?.data?.error || errorOAuth || 'No se pudo completar el inicio de sesión social.'
+    error.value = e.response?.data?.error || 'No se pudo completar el inicio de sesión social.'
   } finally {
     cargando.value = false
   }
 })
+
+async function completarRegistroOAuth() {
+  modalRol.value.error    = ''
+  modalRol.value.enviando = true
+  try {
+    const { data } = await axios.post('/api/auth/oauth/completar', {
+      pending_token: modalRol.value.pendingToken,
+      rol:           modalRol.value.rolSeleccionado,
+    })
+    await auth.completarSesionOAuth(data.token)
+    enrutador.push({ name: 'panel' })
+  } catch (e) {
+    modalRol.value.error = e.response?.data?.error || 'No se pudo crear la cuenta. Intentá nuevamente.'
+  } finally {
+    modalRol.value.enviando = false
+  }
+}
 
 async function manejarInicioSesion() {
   error.value    = ''
