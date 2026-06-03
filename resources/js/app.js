@@ -4,6 +4,7 @@ import { createPinia } from 'pinia'
 import App from './App.vue'
 import enrutador from './router'
 import axios from 'axios'
+import { initializeEcho } from './services/echo.js'
 
 // URL base del backend Laravel API
 axios.defaults.baseURL = import.meta.env.VITE_API_URL || 'https://api.agendaonline.cloud-ip.cc'
@@ -14,6 +15,9 @@ const tokenGuardado = localStorage.getItem('token')
 if (tokenGuardado) {
     axios.defaults.headers.common['Authorization'] = `Bearer ${tokenGuardado}`
 }
+
+// Inicializar Echo para WebSockets
+initializeEcho()
 
 const app = createApp(App)
 app.use(createPinia())

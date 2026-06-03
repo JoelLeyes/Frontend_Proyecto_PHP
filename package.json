@@ -8,9 +8,11 @@
     },
     "dependencies": {
         "axios": "^1.7",
+        "laravel-echo": "^1.16",
         "leaflet": "^1.9.4",
         "livekit-client": "^2.0",
         "pinia": "^2.2",
+        "socket.io-client": "^4.7",
         "vue": "^3.5",
         "vue-router": "^4.4"
     },
