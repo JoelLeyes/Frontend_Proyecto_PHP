@@ -98,10 +98,12 @@ onMounted(async () => {
 
     sala.on(RoomEvent.ParticipantConnected, () => actualizarParticipantes())
     sala.on(RoomEvent.ParticipantDisconnected, () => actualizarParticipantes())
-    sala.on(RoomEvent.TrackSubscribed, (track, pub, participante) => {
+    sala.on(RoomEvent.TrackSubscribed, (track, _pub, participante) => {
       actualizarParticipantes()
       if (track.kind === Track.Kind.Video) {
         nextTick(() => asignarVideoRemoto(videoRefs[participante.identity], participante))
+      } else if (track.kind === Track.Kind.Audio) {
+        track.attach()
       }
     })
     sala.on(RoomEvent.TrackUnsubscribed, () => actualizarParticipantes())
