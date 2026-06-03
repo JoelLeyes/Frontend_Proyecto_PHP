@@ -1,53 +1,38 @@
-import Echo from 'laravel-echo';
-import io from 'socket.io-client';
+import Echo from 'laravel-echo'
+import Pusher from 'pusher-js'
 
-// Configurar Echo con Socket.IO
-window.io = io;
-
-let echo = null;
+let echo = null
 
 export function initializeEcho() {
-  if (echo) {
-    return echo;
-  }
+    if (echo) return echo
 
-  const reverb_host = import.meta.env.VITE_REVERB_HOST || 'localhost';
-  const reverb_port = import.meta.env.VITE_REVERB_PORT || 8080;
-  const reverb_scheme = import.meta.env.VITE_REVERB_SCHEME || 'http';
+    window.Pusher = Pusher
 
-  echo = new Echo({
-    broadcaster: 'socket.io',
-    host: `${reverb_scheme}://${reverb_host}:${reverb_port}`,
-    client: io,
-    rejectUnauthorizedRequests: false,
-  });
+    echo = new Echo({
+        broadcaster: 'reverb',
+        key: import.meta.env.VITE_REVERB_APP_KEY,
+        wsHost: import.meta.env.VITE_REVERB_HOST || 'localhost',
+        wsPort: Number(import.meta.env.VITE_REVERB_PORT) || 8080,
+        wssPort: Number(import.meta.env.VITE_REVERB_PORT) || 443,
+        forceTLS: (import.meta.env.VITE_REVERB_SCHEME ?? 'https') === 'https',
+        enabledTransports: ['ws', 'wss'],
+        authEndpoint: (import.meta.env.VITE_API_URL || '') + '/broadcasting/auth',
+        auth: {
+            headers: {
+                Authorization: `Bearer ${localStorage.getItem('token') ?? ''}`,
+            },
+        },
+    })
 
-  // Log de conexión
-  echo.connector.socket.on('connect', () => {
-    console.log('✓ WebSocket conectado');
-  });
-
-  echo.connector.socket.on('disconnect', () => {
-    console.warn('✗ WebSocket desconectado');
-  });
-
-  echo.connector.socket.on('connect_error', (error) => {
-    console.error('Error de conexión WebSocket:', error);
-  });
-
-  return echo;
+    window.Echo = echo
+    return echo
 }
 
 export function getEcho() {
-  if (!echo) {
-    return initializeEcho();
-  }
-  return echo;
+    return echo
 }
 
-export function disconnectEcho() {
-  if (echo) {
-    echo.disconnect();
-    echo = null;
-  }
+export function actualizarTokenEcho(token) {
+    if (!echo) return
+    echo.connector.pusher.config.auth.headers.Authorization = `Bearer ${token}`
 }

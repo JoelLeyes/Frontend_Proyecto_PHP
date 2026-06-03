@@ -339,11 +339,12 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useReservasStore } from '@/stores/reservas'
 import BotonPago from '@/components/BotonPago.vue'
 import MapaUbicacion from '@/components/MapaUbicacion.vue'
+import { getEcho } from '@/services/echo.js'
 import axios from 'axios'
 
 const auth  = useAuthStore()
@@ -565,5 +566,32 @@ async function pagoExitoso() {
   cargarReservas(store.paginacion?.current_page || 1)
 }
 
-onMounted(() => cargarReservas())
+let canalWs = null
+
+function suscribirWebSocket() {
+    const echo = getEcho()
+    if (!echo || !auth.usuario?.id) return
+
+    canalWs = echo.private(`reservas.${auth.usuario.id}`)
+        .listen('.reserva.actualizada', ({ reserva }) => {
+            const indice = store.reservas.findIndex(r => r.id === reserva.id)
+            if (indice !== -1) {
+                store.reservas[indice] = reserva
+            } else {
+                cargarReservas(store.paginacion?.current_page || 1)
+            }
+        })
+}
+
+onMounted(() => {
+    cargarReservas()
+    suscribirWebSocket()
+})
+
+onBeforeUnmount(() => {
+    if (canalWs) {
+        getEcho()?.leave(`reservas.${auth.usuario?.id}`)
+        canalWs = null
+    }
+})
 </script>
