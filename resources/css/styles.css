@@ -1557,11 +1557,12 @@ p:last-child { margin-bottom: 0; }
 .video-sala__grilla {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 1rem; padding: 1rem; flex: 1; overflow: auto;
+  grid-auto-rows: 1fr;
+  gap: 1rem; padding: 1rem; flex: 1; min-height: 0; overflow: hidden;
 }
 .video-sala__participante {
   position: relative; background: #1e293b; border-radius: .75rem;
-  overflow: hidden; aspect-ratio: 16/9;
+  overflow: hidden; min-height: 0;
   display: flex; align-items: center; justify-content: center;
 }
 .video-sala__participante--espera { flex-direction: column; gap: .5rem; color: #94a3b8; }

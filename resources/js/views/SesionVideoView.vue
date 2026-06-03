@@ -126,6 +126,9 @@ onMounted(async () => {
     estado.value = 'conectado'
     await nextTick()
 
+    // Desbloquear AudioContext del navegador (necesario por políticas de autoplay)
+    await sala.startAudio()
+
     // Ahora sí adjuntar video local (puede que ya esté publicado)
     for (const [, pub] of sala.localParticipant.videoTrackPublications) {
       if (pub.track && videoLocal.value) {
