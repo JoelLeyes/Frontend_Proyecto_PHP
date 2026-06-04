@@ -6,11 +6,17 @@ let echo = null
 export function initializeEcho() {
     if (echo) return echo
 
+    const appKey = import.meta.env.VITE_REVERB_APP_KEY
+    if (!appKey) {
+        console.warn('VITE_REVERB_APP_KEY no configurado. Echo deshabilitado.')
+        return null
+    }
+
     window.Pusher = Pusher
 
     echo = new Echo({
         broadcaster: 'reverb',
-        key: import.meta.env.VITE_REVERB_APP_KEY,
+        key: appKey,
         wsHost: import.meta.env.VITE_REVERB_HOST || 'localhost',
         wsPort: Number(import.meta.env.VITE_REVERB_PORT) || 8080,
         wssPort: Number(import.meta.env.VITE_REVERB_PORT) || 443,
