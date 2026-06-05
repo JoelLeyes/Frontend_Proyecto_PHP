@@ -1,18 +1,20 @@
-import { ref, onMounted, onUnmounted, computed } from 'vue';
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
 import { getEcho } from '../services/echo.js';
 import { useNotificationStore } from '../stores/notificationStore.js';
+import { useAuthStore } from '../stores/auth.js';
 
 export function useReservationEvents() {
   const notifications = useNotificationStore();
+  const auth = useAuthStore();
   const reservations = ref([]);
   const pendingReservations = ref([]);
   const confirmedReservations = ref([]);
   const updatingReservationIds = ref(new Set());
+  const currentChannel = ref(null);
 
   // Obtener el ID del usuario autenticado
   const userId = computed(() => {
-    // Asumir que el ID está guardado en localStorage después del login
-    return localStorage.getItem('userId');
+    return auth.usuario?.id || null;
   });
 
   const listenToReservationEvents = () => {
@@ -23,6 +25,11 @@ export function useReservationEvents() {
 
     const echo = getEcho();
     const channelName = `reservas.${userId.value}`;
+
+    if (currentChannel.value && currentChannel.value !== channelName) {
+      echo.leaveChannel(currentChannel.value);
+    }
+    currentChannel.value = channelName;
 
     echo
       .private(channelName)
@@ -47,12 +54,21 @@ export function useReservationEvents() {
   const stopListeningToReservationEvents = () => {
     if (userId.value) {
       const echo = getEcho();
-      echo.leaveChannel(`reservas.${userId.value}`);
+      if (currentChannel.value) {
+        echo.leaveChannel(currentChannel.value);
+        currentChannel.value = null;
+      }
     }
   };
 
   onMounted(() => {
     listenToReservationEvents();
+  });
+
+  watch(userId, (newValue, oldValue) => {
+    if (newValue && newValue !== oldValue) {
+      listenToReservationEvents();
+    }
   });
 
   onUnmounted(() => {
