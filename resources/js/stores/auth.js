@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import axios from 'axios'
-import { actualizarTokenEcho } from '../services/echo.js'
+import { initializeEcho, actualizarTokenEcho } from '../services/echo.js'
 
 /**
  * Store de autenticación.
@@ -20,6 +20,7 @@ export const useAuthStore = defineStore('auth', () => {
         localStorage.setItem('usuario', JSON.stringify(datosUsuario))
         localStorage.setItem('token', tokenAcceso)
         axios.defaults.headers.common['Authorization'] = `Bearer ${tokenAcceso}`
+        initializeEcho()
         actualizarTokenEcho(tokenAcceso)
     }
 
@@ -47,6 +48,7 @@ export const useAuthStore = defineStore('auth', () => {
         token.value = tokenAcceso
         localStorage.setItem('token', tokenAcceso)
         axios.defaults.headers.common['Authorization'] = `Bearer ${tokenAcceso}`
+        initializeEcho()
         actualizarTokenEcho(tokenAcceso)
 
         try {

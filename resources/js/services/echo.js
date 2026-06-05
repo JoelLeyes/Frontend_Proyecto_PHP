@@ -12,6 +12,11 @@ export function initializeEcho() {
         return null
     }
 
+    const token = localStorage.getItem('token')
+    if (!token) {
+        return null
+    }
+
     window.Pusher = Pusher
 
     echo = new Echo({
@@ -25,7 +30,7 @@ export function initializeEcho() {
         authEndpoint: (import.meta.env.VITE_API_URL || '') + '/broadcasting/auth',
         auth: {
             headers: {
-                Authorization: `Bearer ${localStorage.getItem('token') ?? ''}`,
+                Authorization: `Bearer ${token}`,
             },
         },
     })

@@ -16,8 +16,10 @@ if (tokenGuardado) {
     axios.defaults.headers.common['Authorization'] = `Bearer ${tokenGuardado}`
 }
 
-// Inicializar Echo para WebSockets
-initializeEcho()
+// Inicializar Echo solo si ya hay sesión
+if (tokenGuardado) {
+    initializeEcho()
+}
 
 const app = createApp(App)
 app.use(createPinia())
