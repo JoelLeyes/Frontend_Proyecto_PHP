@@ -110,13 +110,19 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import axios from 'axios'
+import { getEcho } from '@/services/echo'
+import { useAuthStore } from '@/stores/auth'
 
 const resenas = ref([])
 const paginacion = ref(null)
 const estadisticas = ref(null)
 const cargando = ref(true)
+const canalActual = ref(null)
+
+const auth = useAuthStore()
+const usuarioId = computed(() => auth.usuario?.id || null)
 
 function iniciales(nombre) {
   if (!nombre) return '?'
@@ -164,5 +170,48 @@ function cargarPagina(p) {
   cargarResenas(p)
 }
 
-onMounted(() => cargarResenas())
+function escucharResenas() {
+  if (!usuarioId.value) return
+
+  const echo = getEcho()
+  if (!echo) return
+
+  const channelName = `reservas.${usuarioId.value}`
+  if (canalActual.value && canalActual.value !== channelName) {
+    echo.leaveChannel(canalActual.value)
+  }
+
+  canalActual.value = channelName
+
+  echo
+    .private(channelName)
+    .listen('.reserva.actualizada', ({ reserva }) => {
+      if (!reserva?.resena) return
+      const paginaActual = paginacion.value?.current_page || 1
+      cargarResenas(paginaActual)
+    })
+}
+
+function dejarDeEscucharResenas() {
+  if (!usuarioId.value) return
+  const echo = getEcho()
+  if (!echo || !canalActual.value) return
+  echo.leaveChannel(canalActual.value)
+  canalActual.value = null
+}
+
+onMounted(() => {
+  cargarResenas()
+  escucharResenas()
+})
+
+watch(usuarioId, (nuevo, anterior) => {
+  if (nuevo && nuevo !== anterior) {
+    escucharResenas()
+  }
+})
+
+onBeforeUnmount(() => {
+  dejarDeEscucharResenas()
+})
 </script>
