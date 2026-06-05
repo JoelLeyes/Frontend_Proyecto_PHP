@@ -568,19 +568,20 @@ async function pagoExitoso() {
 
 let canalWs = null
 
+function manejarActualizacion({ reserva }) {
+    const indice = store.reservas.findIndex(r => r.id === reserva.id)
+    if (indice !== -1) {
+        store.reservas[indice] = reserva
+    } else {
+        cargarReservas(store.paginacion?.current_page || 1)
+    }
+}
+
 function suscribirWebSocket() {
     const echo = getEcho()
     if (!echo || !auth.usuario?.id) return
-
     canalWs = echo.private(`reservas.${auth.usuario.id}`)
-        .listen('.reserva.actualizada', ({ reserva }) => {
-            const indice = store.reservas.findIndex(r => r.id === reserva.id)
-            if (indice !== -1) {
-                store.reservas[indice] = reserva
-            } else {
-                cargarReservas(store.paginacion?.current_page || 1)
-            }
-        })
+    canalWs.listen('.reserva.actualizada', manejarActualizacion)
 }
 
 onMounted(() => {
@@ -590,7 +591,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
     if (canalWs) {
-        getEcho()?.leave(`reservas.${auth.usuario?.id}`)
+        canalWs.stopListening('.reserva.actualizada', manejarActualizacion)
         canalWs = null
     }
 })
