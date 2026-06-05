@@ -1356,6 +1356,7 @@ p:last-child { margin-bottom: 0; }
 .navbar__dropdown-separador  { height: 1px; background: var(--color-borde-suave); margin: .375rem 0; }
 .navbar__dropdown-item--salir { color: #dc2626; }
 .navbar__dropdown-item--salir:hover { background: #fee2e2; color: #b91c1c; }
+.navbar__dropdown-item--solo-movil { display: none; }
 
 /* ===== Campana de notificaciones ===== */
 .navbar__campana-wrapper { position: relative; }
@@ -1829,11 +1830,24 @@ p:last-child { margin-bottom: 0; }
   .dispon-fila-2 { grid-template-columns: 1fr; }
 
   /* NavBar — compactar para que no se aplaste en 375px */
-  .navbar__izquierda .navbar__link { display: none; }       /* Oculta "Profesionales" */
-  .navbar__link--panel              { display: none; }       /* Oculta "Mi panel" (está en el dropdown) */
-  .navbar__perfil-info              { display: none; }       /* Oculta nombre + chip de rol */
+  .navbar__izquierda .navbar__link { display: none; }
+  .navbar__link--panel              { display: none; }
+  .navbar__perfil-info              { display: none; }
   .navbar__chevron                  { display: none; }
   .navbar__boton { padding: .4rem .75rem; font-size: .8125rem; }
+
+  /* "Profesionales" aparece en el dropdown solo en mobile */
+  .navbar__dropdown-item--solo-movil { display: flex; }
+
+  /* Dropdown de notificaciones: posición fija para no salirse del viewport */
+  .navbar__notif-dropdown {
+    position: fixed;
+    top: calc(var(--alto-nav) + .25rem);
+    left: .75rem;
+    right: .75rem;
+    width: auto;
+    max-height: 70vh;
+  }
 
   /* Admin tabs — scroll horizontal en lugar de desbordarse */
   .admin-tabs { overflow-x: auto; flex-wrap: nowrap; padding-bottom: .25rem; }

@@ -71,6 +71,9 @@
 
           <!-- Menú dropdown -->
           <div v-if="menuAbierto" class="navbar__dropdown">
+            <RouterLink class="navbar__dropdown-item navbar__dropdown-item--solo-movil" :to="{ name: 'profesionales' }" @click="menuAbierto = false">
+              🔍 Profesionales
+            </RouterLink>
             <RouterLink class="navbar__dropdown-item" :to="{ name: 'mi-perfil' }" @click="menuAbierto = false">
               👤 Mi perfil
             </RouterLink>
