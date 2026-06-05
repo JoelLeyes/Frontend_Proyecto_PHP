@@ -22,83 +22,32 @@ export function useReservationEvents() {
     }
 
     const echo = getEcho();
-    const channelName = `reservations.${userId.value}`;
+    const channelName = `reservas.${userId.value}`;
 
     echo
       .private(channelName)
-      .listen('reservation.created', (event) => {
-        console.log('Evento: Nueva reserva', event);
-        const reserva = event.reserva;
-        pendingReservations.value = [
-          ...pendingReservations.value.filter((r) => r.id !== reserva.id),
-          reserva,
-        ];
-        notifications.info(`Nueva solicitud de reserva de ${reserva.cliente?.nombre || 'un cliente'}`, 'Reserva nueva');
-      })
-      .listen('reservation.confirmed', (event) => {
-        console.log('Evento: Reserva confirmada', event);
-        const reserva = event.reserva;
+      .listen('.reserva.actualizada', ({ reserva }) => {
+        if (!reserva) return;
+
         updatingReservationIds.value.add(reserva.id);
 
-        // Actualizar en las listas
-        pendingReservations.value = pendingReservations.value.filter((r) => r.id !== reserva.id);
-        confirmedReservations.value = [
-          ...confirmedReservations.value.filter((r) => r.id !== reserva.id),
-          { ...reserva, estado: 'confirmada' },
-        ];
-
-        setTimeout(() => updatingReservationIds.value.delete(reserva.id), 300);
-        notifications.success('Reserva confirmada correctamente', 'Estado actualizado');
-      })
-      .listen('reservation.completed', (event) => {
-        console.log('Evento: Reserva finalizada', event);
-        const reserva = event.reserva;
-        updatingReservationIds.value.add(reserva.id);
-
-        // Actualizar en las listas
         pendingReservations.value = pendingReservations.value.filter((r) => r.id !== reserva.id);
         confirmedReservations.value = confirmedReservations.value.filter((r) => r.id !== reserva.id);
 
-        setTimeout(() => updatingReservationIds.value.delete(reserva.id), 300);
-        notifications.success('Reserva finalizada', 'Reserva completada');
-      })
-      .listen('reservation.cancelled', (event) => {
-        console.log('Evento: Reserva cancelada', event);
-        const reserva = event.reserva;
-        updatingReservationIds.value.add(reserva.id);
-
-        // Remover de las listas
-        pendingReservations.value = pendingReservations.value.filter((r) => r.id !== reserva.id);
-        confirmedReservations.value = confirmedReservations.value.filter((r) => r.id !== reserva.id);
-
-        setTimeout(() => updatingReservationIds.value.delete(reserva.id), 300);
-        notifications.warning('Reserva cancelada', 'Acción realizada');
-      })
-      .listen('payment.received', (event) => {
-        console.log('Evento: Pago recibido', event);
-        const pago = event.pago;
-        const reserva = event.reserva;
-
-        // Actualizar el estado de la reserva a "pagada"
-        const index = confirmedReservations.value.findIndex((r) => r.id === reserva.id);
-        if (index >= 0) {
-          confirmedReservations.value[index] = {
-            ...confirmedReservations.value[index],
-            estado: 'pagada',
-          };
+        if (['pendiente'].includes(reserva.estado)) {
+          pendingReservations.value = [...pendingReservations.value, reserva];
+        } else if (['confirmada', 'pagada', 'en_curso'].includes(reserva.estado)) {
+          confirmedReservations.value = [...confirmedReservations.value, reserva];
         }
 
-        notifications.success(
-          `Pago de $${pago.monto} recibido correctamente`,
-          'Pago confirmado'
-        );
+        setTimeout(() => updatingReservationIds.value.delete(reserva.id), 300);
       });
   };
 
   const stopListeningToReservationEvents = () => {
     if (userId.value) {
       const echo = getEcho();
-      echo.leaveChannel(`reservations.${userId.value}`);
+      echo.leaveChannel(`reservas.${userId.value}`);
     }
   };
 
