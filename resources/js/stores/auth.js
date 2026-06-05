@@ -20,8 +20,12 @@ export const useAuthStore = defineStore('auth', () => {
         localStorage.setItem('usuario', JSON.stringify(datosUsuario))
         localStorage.setItem('token', tokenAcceso)
         axios.defaults.headers.common['Authorization'] = `Bearer ${tokenAcceso}`
-        initializeEcho()
-        actualizarTokenEcho(tokenAcceso)
+        try {
+            initializeEcho()
+            actualizarTokenEcho(tokenAcceso)
+        } catch (e) {
+            console.warn('No se pudo inicializar Echo. Continuando sin WS.', e)
+        }
     }
 
     function limpiarSesionLocal() {
@@ -48,8 +52,12 @@ export const useAuthStore = defineStore('auth', () => {
         token.value = tokenAcceso
         localStorage.setItem('token', tokenAcceso)
         axios.defaults.headers.common['Authorization'] = `Bearer ${tokenAcceso}`
-        initializeEcho()
-        actualizarTokenEcho(tokenAcceso)
+        try {
+            initializeEcho()
+            actualizarTokenEcho(tokenAcceso)
+        } catch (e) {
+            console.warn('No se pudo inicializar Echo (OAuth). Continuando sin WS.', e)
+        }
 
         try {
             const { data } = await axios.get('/api/auth/perfil')
