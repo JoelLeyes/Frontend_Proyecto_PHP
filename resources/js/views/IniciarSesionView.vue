@@ -170,13 +170,17 @@ async function completarRegistroOAuth() {
 }
 
 async function manejarInicioSesion() {
+  if (cargando.value) return
   error.value    = ''
   cargando.value = true
+  auth.limpiarSesionLocal()
   try {
     await auth.iniciarSesion(formulario.value.email, formulario.value.password)
     enrutador.push({ name: 'panel' })
   } catch (e) {
-    error.value = e.response?.data?.error || 'Email o contraseña incorrectos.'
+    error.value = e.response?.data?.message
+      || e.response?.data?.error
+      || 'Email o contraseña incorrectos.'
   } finally {
     cargando.value = false
   }

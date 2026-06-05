@@ -80,8 +80,10 @@ const error    = ref('')
 const cargando = ref(false)
 
 async function manejarRegistro() {
+  if (cargando.value) return
   error.value    = ''
   cargando.value = true
+  auth.limpiarSesionLocal()
   try {
     await auth.registrar(formulario.value)
     enrutador.push({ name: 'panel' })
@@ -89,7 +91,9 @@ async function manejarRegistro() {
     const errores = e.response?.data?.errors
     error.value   = errores
       ? Object.values(errores).flat().join(' ')
-      : e.response?.data?.error || 'Error al registrarse.'
+      : e.response?.data?.message
+        || e.response?.data?.error
+        || 'Error al registrarse.'
   } finally {
     cargando.value = false
   }

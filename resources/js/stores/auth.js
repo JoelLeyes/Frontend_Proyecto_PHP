@@ -66,5 +66,5 @@ export const useAuthStore = defineStore('auth', () => {
         limpiarSesionLocal()
     }
 
-    return { usuario, token, estaLogueado, iniciarSesion, registrar, completarSesionOAuth, cerrarSesion }
+    return { usuario, token, estaLogueado, iniciarSesion, registrar, completarSesionOAuth, cerrarSesion, limpiarSesionLocal }
 })
