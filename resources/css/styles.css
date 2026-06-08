@@ -827,6 +827,8 @@ p:last-child { margin-bottom: 0; }
   overflow: hidden;
 }
 
+.modal--confirm { max-width: 360px; }
+
 .modal__cabecera {
   display: flex;
   align-items: flex-start;

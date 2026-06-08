@@ -342,13 +342,17 @@
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useReservasStore } from '@/stores/reservas'
+import { useNotificationStore } from '@/stores/notificationStore'
+import { useConfirm } from '@/composables/useConfirm.js'
 import BotonPago from '@/components/BotonPago.vue'
 import MapaUbicacion from '@/components/MapaUbicacion.vue'
 import { getEcho } from '@/services/echo.js'
 import axios from 'axios'
 
-const auth  = useAuthStore()
-const store = useReservasStore()
+const auth      = useAuthStore()
+const store     = useReservasStore()
+const notif     = useNotificationStore()
+const { confirmar: pedirConfirmacion } = useConfirm()
 
 const esProfesional  = computed(() => auth.usuario?.rol === 'profesional')
 const filtroEstado   = ref('')
@@ -413,12 +417,12 @@ function cargarPagina(p) { cargarReservas(p) }
 
 // ── Confirmar ─────────────────────────────────────────────────────────────────
 async function confirmar(reserva) {
-  if (!confirm(`¿Confirmar la reserva de ${reserva.cliente?.name}?`)) return
+  if (!await pedirConfirmacion(`¿Confirmar la reserva de ${reserva.cliente?.name}?`)) return
   procesando.value = reserva.id
   try {
     await store.confirmarReserva(reserva.id)
   } catch (e) {
-    alert(e.response?.data?.error || 'No se pudo confirmar.')
+    notif.error(e.response?.data?.error || 'No se pudo confirmar.')
   } finally {
     procesando.value = null
   }
@@ -426,12 +430,12 @@ async function confirmar(reserva) {
 
 // ── Finalizar ─────────────────────────────────────────────────────────────────
 async function finalizar(reserva) {
-  if (!confirm(`¿Marcar como finalizada la reserva de ${reserva.cliente?.name}?`)) return
+  if (!await pedirConfirmacion(`¿Marcar como finalizada la reserva de ${reserva.cliente?.name}?`)) return
   procesando.value = reserva.id
   try {
     await store.finalizarReserva(reserva.id)
   } catch (e) {
-    alert(e.response?.data?.error || 'No se pudo finalizar la reserva.')
+    notif.error(e.response?.data?.error || 'No se pudo finalizar la reserva.')
   } finally {
     procesando.value = null
   }

@@ -382,10 +382,12 @@
 import { ref, reactive, onMounted } from 'vue'
 import axios from 'axios'
 import { useAuthStore } from '@/stores/auth'
+import { useConfirm } from '@/composables/useConfirm.js'
 import MapaUbicacion from '@/components/MapaUbicacion.vue'
 
 const auth = useAuthStore()
 const profesionalId = auth.usuario?.profesional?.id
+const { confirmar } = useConfirm()
 
 // ── Configuración del profesional (ubicación + cancelación) ──────────────────
 const configProf = ref({
@@ -651,7 +653,7 @@ async function guardarPaquete() {
 }
 
 async function desactivarPaquete(servicio, paquete) {
-  if (!confirm(`¿Desactivar el paquete "${paquete.nombre}"? Los clientes que ya lo compraron no se ven afectados.`)) return
+  if (!await confirmar(`¿Desactivar el paquete "${paquete.nombre}"? Los clientes que ya lo compraron no se ven afectados.`)) return
   await axios.put(
     `/api/profesionales/${profesionalId}/servicios/${servicio.id}/paquetes/${paquete.id}`,
     { activo: false }

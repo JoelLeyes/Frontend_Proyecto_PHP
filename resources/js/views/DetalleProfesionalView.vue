@@ -321,6 +321,7 @@
 import { ref, computed, reactive, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useNotificationStore } from '@/stores/notificationStore'
 import axios from 'axios'
 import MapaUbicacion from '@/components/MapaUbicacion.vue'
 import BotonPago from '@/components/BotonPago.vue'
@@ -328,6 +329,7 @@ import BotonPago from '@/components/BotonPago.vue'
 const ruta        = useRoute()
 const enrutador   = useRouter()
 const auth        = useAuthStore()
+const notif       = useNotificationStore()
 const profesional = ref(null)
 const resenas     = ref([])
 const tabActivo   = ref('servicios')
@@ -461,7 +463,7 @@ function abrirCompra(paquete) {
     return
   }
   if (auth.usuario?.rol !== 'cliente') {
-    alert('Solo los clientes pueden adquirir paquetes.')
+    notif.error('Solo los clientes pueden adquirir paquetes.')
     return
   }
   modalCompra.value = {

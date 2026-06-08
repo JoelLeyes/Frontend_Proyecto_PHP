@@ -200,7 +200,10 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import { useConfirm } from '@/composables/useConfirm.js'
 import axios from 'axios'
+
+const { confirmar } = useConfirm()
 
 const auth        = useAuthStore()
 const cargando    = ref(true)
@@ -287,7 +290,7 @@ async function guardarRegla() {
 }
 
 async function eliminarRegla(id) {
-  if (!confirm('¿Eliminar esta franja horaria?')) return
+  if (!await confirmar('¿Eliminar esta franja horaria?')) return
   await axios.delete(`/api/profesionales/${profesionalId}/disponibilidad/reglas/${id}`)
   reglas.value = reglas.value.filter(r => r.id !== id)
 }
@@ -323,7 +326,7 @@ async function guardarExcepcion() {
 }
 
 async function eliminarExcepcion(id) {
-  if (!confirm('¿Eliminar esta excepción?')) return
+  if (!await confirmar('¿Eliminar esta excepción?')) return
   await axios.delete(`/api/profesionales/${profesionalId}/disponibilidad/excepciones/${id}`)
   excepciones.value = excepciones.value.filter(e => e.id !== id)
 }

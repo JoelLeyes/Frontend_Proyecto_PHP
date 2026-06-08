@@ -274,6 +274,9 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
+import { useNotificationStore } from '@/stores/notificationStore'
+
+const notif = useNotificationStore()
 
 const TABS = [
   { id: 'dashboard', label: '📊 Dashboard' },
@@ -343,7 +346,7 @@ async function toggleActivar(u) {
     const { data } = await axios.patch(`/api/admin/usuarios/${u.id}/activar`)
     u.activo = data.usuario.activo
   } catch (e) {
-    alert(e.response?.data?.error || 'Error al cambiar estado.')
+    notif.error(e.response?.data?.error || 'Error al cambiar estado.')
   } finally {
     toggleando.value = null
   }
