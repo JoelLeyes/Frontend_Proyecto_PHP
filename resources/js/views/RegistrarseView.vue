@@ -39,15 +39,32 @@
         <label>Email</label>
         <input v-model="formulario.email" type="email" placeholder="ejemplo@correo.com" required />
       </div>
-      <div class="campo-fila">
-        <div class="campo">
-          <label>Contraseña</label>
-          <input v-model="formulario.password" type="password" placeholder="Mínimo 8 caracteres" required />
+      <div class="campo">
+        <label>Contraseña</label>
+        <div class="campo-contrasena">
+          <input v-model="formulario.password" :type="verContrasena ? 'text' : 'password'" placeholder="Mínimo 8 caracteres" required />
+          <button type="button" class="campo-contrasena__ojo" @click="verContrasena = !verContrasena" :aria-label="verContrasena ? 'Ocultar contraseña' : 'Mostrar contraseña'">
+            {{ verContrasena ? '🙈' : '👁️' }}
+          </button>
         </div>
-        <div class="campo">
-          <label>Confirmar contraseña</label>
-          <input v-model="formulario.password_confirmation" type="password" placeholder="Repetí la contraseña" required />
+        <ul v-if="formulario.password" class="requisitos-contrasena">
+          <li :class="['requisito', requisitos.longitud  ? 'requisito--ok' : 'requisito--pendiente']">{{ requisitos.longitud  ? '✅' : '❌' }} Mínimo 8 caracteres</li>
+          <li :class="['requisito', requisitos.mayuscula ? 'requisito--ok' : 'requisito--pendiente']">{{ requisitos.mayuscula ? '✅' : '❌' }} Al menos una mayúscula</li>
+          <li :class="['requisito', requisitos.minuscula ? 'requisito--ok' : 'requisito--pendiente']">{{ requisitos.minuscula ? '✅' : '❌' }} Al menos una minúscula</li>
+          <li :class="['requisito', requisitos.numero    ? 'requisito--ok' : 'requisito--pendiente']">{{ requisitos.numero    ? '✅' : '❌' }} Al menos un número</li>
+          <li :class="['requisito', requisitos.simbolo   ? 'requisito--ok' : 'requisito--pendiente']">{{ requisitos.simbolo   ? '✅' : '❌' }} Al menos un carácter especial (!@#$%&*)</li>
+        </ul>
+      </div>
+      <div class="campo">
+        <label>Confirmar contraseña</label>
+        <div class="campo-contrasena">
+          <input v-model="formulario.password_confirmation" :type="verConfirmacion ? 'text' : 'password'" placeholder="Repetí la contraseña" required />
+          <button type="button" class="campo-contrasena__ojo" @click="verConfirmacion = !verConfirmacion" :aria-label="verConfirmacion ? 'Ocultar contraseña' : 'Mostrar contraseña'">
+            {{ verConfirmacion ? '🙈' : '👁️' }}
+          </button>
         </div>
+        <p v-if="formulario.password_confirmation && !requisitos.coinciden" class="campo-contrasena__no-coincide">❌ Las contraseñas no coinciden</p>
+        <p v-if="formulario.password_confirmation &&  requisitos.coinciden" class="campo-contrasena__coincide">✅ Las contraseñas coinciden</p>
       </div>
 
       <p v-if="error" class="alerta alerta--error">{{ error }}</p>
@@ -66,7 +83,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
@@ -76,12 +93,32 @@ const enrutador = useRouter()
 const formulario = ref({
   name: '', email: '', password: '', password_confirmation: '', rol: 'cliente',
 })
-const error    = ref('')
-const cargando = ref(false)
+const error          = ref('')
+const cargando       = ref(false)
+const verContrasena  = ref(false)
+const verConfirmacion = ref(false)
+
+const requisitos = computed(() => {
+  const p = formulario.value.password
+  return {
+    longitud:  p.length >= 8,
+    mayuscula: /[A-Z]/.test(p),
+    minuscula: /[a-z]/.test(p),
+    numero:    /[0-9]/.test(p),
+    simbolo:   /[^A-Za-z0-9]/.test(p),
+    coinciden: p.length > 0 && p === formulario.value.password_confirmation,
+  }
+})
 
 async function manejarRegistro() {
   if (cargando.value) return
-  error.value    = ''
+  error.value = ''
+
+  if (!requisitos.value.coinciden) {
+    error.value = 'Las contraseñas no coinciden.'
+    return
+  }
+
   cargando.value = true
   auth.limpiarSesionLocal()
   try {

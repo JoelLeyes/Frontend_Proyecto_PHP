@@ -140,6 +140,7 @@ function toggleCampana() {
     if (campanaAbierta.value) {
         menuAbierto.value = false
         notifStore.marcarTodasLeidas()
+        notifStore.marcarLeidasEnApi()
     }
 }
 

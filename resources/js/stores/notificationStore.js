@@ -1,9 +1,33 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import axios from 'axios'
 
 export const useNotificationStore = defineStore('notifications', () => {
     const notifications = ref([])
     const historial     = ref([])
+
+    // ── Carga desde API al arrancar ──────────────────────────────────────────
+    const cargarDesdeApi = async () => {
+        try {
+            const { data } = await axios.get('/api/notificaciones')
+            historial.value = data.map(n => ({
+                id:     n.id,
+                leida:  n.leida,
+                tiempo: new Date(n.created_at),
+                tipo:   n.tipo,
+                icono:  n.icono,
+                texto:  n.mensaje,
+            }))
+        } catch {
+            // Si falla (sin sesión, red caída), el historial queda vacío
+        }
+    }
+
+    const marcarLeidasEnApi = async () => {
+        try {
+            await axios.post('/api/notificaciones/leer-todas')
+        } catch { /* silencioso */ }
+    }
 
     // ── Toasts (auto-dismiss) ────────────────────────────────────────────────
     const addNotification = (notification) => {
@@ -49,5 +73,6 @@ export const useNotificationStore = defineStore('notifications', () => {
         addNotification, removeNotification, clearNotifications,
         success, error, warning, info,
         agregarAlHistorial, marcarTodasLeidas,
+        cargarDesdeApi, marcarLeidasEnApi,
     }
 })
