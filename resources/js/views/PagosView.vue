@@ -76,8 +76,9 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import { getEcho } from '@/services/echo'
 import axios from 'axios'
 
 const auth   = useAuthStore()
@@ -87,6 +88,7 @@ const pagina = ref(1)
 const desde  = ref('')
 const hasta  = ref('')
 const cargando = ref(true)
+let canalCobros = null
 
 const totalFormato = computed(() => {
   const suma = pagos.value.reduce((acc, p) => acc + Number(p.monto), 0)
@@ -142,6 +144,55 @@ function tipoInsignia(p) {
   return p.pagable_type?.includes('Reserva') ? 'insignia--confirmada' : 'insignia--pendiente'
 }
 
-onMounted(cargar)
+function suscribirCobrosProfesional() {
+  const echo = getEcho()
+  const profesionalId = auth.usuario?.profesional?.id
+
+  if (!echo || !profesionalId) return
+
+  const nuevoCanal = `professional.${profesionalId}`
+  if (canalCobros === nuevoCanal) return
+
+  if (canalCobros) {
+    try {
+      echo.leave(canalCobros)
+    } catch (error) {
+      console.warn('No se pudo salir del canal anterior de cobros.', error)
+    }
+  }
+
+  canalCobros = nuevoCanal
+
+  echo.private(nuevoCanal).listen('.cobro.actualizado', () => {
+    cargar()
+  })
+}
+
+function limpiarSuscripcionCobros() {
+  const echo = getEcho()
+
+  if (echo && canalCobros) {
+    try {
+      echo.leave(canalCobros)
+    } catch (error) {
+      console.warn('No se pudo limpiar el canal de cobros.', error)
+    }
+  }
+
+  canalCobros = null
+}
+
+onMounted(() => {
+  cargar()
+  suscribirCobrosProfesional()
+})
+
+watch(() => auth.usuario?.profesional?.id, () => {
+  suscribirCobrosProfesional()
+})
+
+onBeforeUnmount(() => {
+  limpiarSuscripcionCobros()
+})
 </script>
 
