@@ -379,15 +379,17 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, onBeforeUnmount, watch } from 'vue'
 import axios from 'axios'
 import { useAuthStore } from '@/stores/auth'
+import { getEcho } from '@/services/echo'
 import { useConfirm } from '@/composables/useConfirm.js'
 import MapaUbicacion from '@/components/MapaUbicacion.vue'
 
 const auth = useAuthStore()
 const profesionalId = auth.usuario?.profesional?.id
 const { confirmar } = useConfirm()
+let canalServicios = null
 
 // ── Configuración del profesional (ubicación + cancelación) ──────────────────
 const configProf = ref({
@@ -669,6 +671,52 @@ async function activarPaquete(servicio, paquete) {
   paquete.activo = true
 }
 
-onMounted(cargarServicios)
+function suscribirServicios() {
+  const echo = getEcho()
+  if (!echo || !profesionalId) return
+
+  const nuevoCanal = `profesionales.${profesionalId}.servicios`
+  if (canalServicios === nuevoCanal) return
+
+  if (canalServicios) {
+    try {
+      echo.leave(canalServicios)
+    } catch (error) {
+      console.warn('No se pudo salir del canal anterior de servicios.', error)
+    }
+  }
+
+  canalServicios = nuevoCanal
+
+  echo.channel(nuevoCanal).listen('.servicio.actualizado', () => {
+    cargarServicios()
+  })
+}
+
+function limpiarSuscripcionServicios() {
+  const echo = getEcho()
+  if (echo && canalServicios) {
+    try {
+      echo.leave(canalServicios)
+    } catch (error) {
+      console.warn('No se pudo limpiar el canal de servicios.', error)
+    }
+  }
+
+  canalServicios = null
+}
+
+onMounted(() => {
+  cargarServicios()
+  suscribirServicios()
+})
+
+watch(() => auth.usuario?.profesional?.id, () => {
+  suscribirServicios()
+})
+
+onBeforeUnmount(() => {
+  limpiarSuscripcionServicios()
+})
 </script>
 

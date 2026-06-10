@@ -336,6 +336,7 @@ const resenas     = ref([])
 const tabActivo   = ref('servicios')
 const servicioSeleccionado = ref(null)
 const cargandoResenas = ref(false)
+let canalServicios = null
 
 const hoy = new Date().toISOString().slice(0, 10)
 
@@ -350,6 +351,42 @@ function clasificacionPromedio(promedio) {
   if (promedio >= 3.1) return 'Bueno'
   if (promedio >= 2.1) return 'Regular'
   return 'A mejorar'
+}
+
+function suscribirServiciosProfesional() {
+  const echo = getEcho()
+  const profesionalRouteId = Number(ruta.params.id)
+  if (!echo || !profesionalRouteId) return
+
+  const nuevoCanal = `profesionales.${profesionalRouteId}.servicios`
+  if (canalServicios === nuevoCanal) return
+
+  if (canalServicios) {
+    try {
+      echo.leave(canalServicios)
+    } catch (error) {
+      console.warn('No se pudo salir del canal anterior de servicios.', error)
+    }
+  }
+
+  canalServicios = nuevoCanal
+
+  echo.channel(nuevoCanal).listen('.servicio.actualizado', () => {
+    cargarDatos()
+  })
+}
+
+function limpiarSuscripcionServicios() {
+  const echo = getEcho()
+  if (echo && canalServicios) {
+    try {
+      echo.leave(canalServicios)
+    } catch (error) {
+      console.warn('No se pudo limpiar el canal de servicios.', error)
+    }
+  }
+
+  canalServicios = null
 }
 
 // ── Paquetes del servicio (los que ofrece el profesional) ─────────────────────
@@ -583,14 +620,20 @@ async function cargarDatos() {
 onMounted(() => {
   cargarDatos()
   sincronizarSuscripcionesPaquetes()
+  suscribirServiciosProfesional()
 })
 
 watch(() => auth.usuario?.id, () => {
   sincronizarSuscripcionesPaquetes()
 })
 
+watch(() => ruta.params.id, () => {
+  suscribirServiciosProfesional()
+})
+
 onBeforeUnmount(() => {
   limpiarSuscripcionesPaquetes()
+  limpiarSuscripcionServicios()
 })
 </script>
 
