@@ -48,15 +48,11 @@
         <div class="tarjeta-profesional__cuerpo">
           <p class="tarjeta-profesional__nombre">{{ p.nombre_negocio || p.usuario?.name }}</p>
           <p class="tarjeta-profesional__negocio">{{ p.usuario?.name }}</p>
-          <p class="tarjeta-profesional__ciudad">📍 {{ p.ciudad }}<span v-if="p.pais">, {{ p.pais }}</span></p>
           <p v-if="p.total_calificaciones > 0" class="tarjeta-profesional__calificacion">
             ⭐ {{ p.promedio_calificacion }}
             <span class="tarjeta-profesional__clasificacion">{{ clasificacionPromedio(p.promedio_calificacion) }}</span>
             <span style="color:var(--color-texto-suave)">({{ p.total_calificaciones }} reseñas)</span>
           </p>
-          <div class="tarjeta-profesional__pie">
-            <span class="modalidad-badge">{{ p.modalidad }}</span>
-          </div>
         </div>
       </RouterLink>
     </div>

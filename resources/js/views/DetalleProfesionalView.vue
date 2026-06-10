@@ -11,14 +11,12 @@
       <div class="detalle-info">
         <h1>{{ profesional.nombre_negocio || profesional.usuario?.name }}</h1>
         <p class="detalle-info__nombre" v-if="profesional.nombre_negocio">{{ profesional.usuario?.name }}</p>
-        <p class="detalle-info__ubicacion">📍 {{ profesional.ciudad }}<span v-if="profesional.pais">, {{ profesional.pais }}</span></p>
         <div class="detalle-info__meta">
           <span v-if="profesional.total_calificaciones > 0" class="detalle-rating">
             ⭐ {{ profesional.promedio_calificacion }}
             <span class="detalle-rating__clasificacion">{{ clasificacionPromedio(profesional.promedio_calificacion) }}</span>
             <span class="detalle-rating__total">({{ profesional.total_calificaciones }} reseñas)</span>
           </span>
-          <span class="modalidad-chip">{{ profesional.modalidad }}</span>
         </div>
         <p v-if="profesional.bio" class="detalle-info__bio">{{ profesional.bio }}</p>
       </div>
@@ -50,7 +48,6 @@
             <div class="tarjeta-servicio__meta">
               <span class="tarjeta-servicio__precio">${{ servicio.precio }}</span>
               <span class="tarjeta-servicio__duracion">⏱ {{ servicio.duracion_minutos }} min</span>
-              <span class="tarjeta-servicio__duracion" style="text-transform:capitalize">{{ servicio.modalidad }}</span>
             </div>
           </div>
 
