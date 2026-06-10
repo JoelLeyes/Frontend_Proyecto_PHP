@@ -224,11 +224,7 @@
 
             <!-- Sub-tabs -->
             <div class="tabs-servicio" style="margin-bottom:.75rem">
-              <button :class="['tab-btn', (tabUbicacion[servicio.id] ?? 'guardadas') === 'guardadas' && 'tab-btn--activo']"
-                @click="tabUbicacion[servicio.id] = 'guardadas'; cargarUbicacionesGuardadas()">
-                📍 Guardadas ({{ ubicacionesGuardadas.length }})
-              </button>
-              <button :class="['tab-btn', tabUbicacion[servicio.id] === 'nueva' && 'tab-btn--activo']"
+              <button :class="['tab-btn', (tabUbicacion[servicio.id] ?? 'nueva') === 'nueva' && 'tab-btn--activo']"
                 @click="tabUbicacion[servicio.id] = 'nueva'">
                 🗺️ Modificar ubi
               </button>
@@ -237,25 +233,6 @@
                 @click="tabUbicacion[servicio.id] = 'asignada'">
                 ✅ Asignada
               </button>
-            </div>
-
-            <!-- Guardadas: lista para asignar -->
-            <div v-if="(tabUbicacion[servicio.id] ?? 'guardadas') === 'guardadas'">
-              <div v-if="cargandoUbicacionesGuardadas" class="cargando" style="padding:1rem">Cargando...</div>
-              <template v-else-if="ubicacionesGuardadas.length">
-                <div v-for="ub in ubicacionesGuardadas" :key="ub.id" class="ubicacion-item">
-                  <div>
-                    <p style="font-weight:700;margin:0">{{ ub.nombre }}</p>
-                    <p v-if="ub.direccion" class="td-suave" style="margin:0;font-size:.8125rem">📍 {{ ub.direccion }}, {{ ub.ciudad }}</p>
-                  </div>
-                  <button class="boton-principal boton-sm"
-                    :disabled="servicio.ubicacion?.id === ub.id"
-                    @click="asignarUbicacion(servicio, ub)">
-                    {{ servicio.ubicacion?.id === ub.id ? '✓ Asignada' : 'Asignar' }}
-                  </button>
-                </div>
-              </template>
-              <div v-else class="paquetes-vacio">No hay ubicaciones guardadas. Creá una en "Modificar ubi".</div>
             </div>
 
             <!-- Nueva ubicación con Leaflet -->
