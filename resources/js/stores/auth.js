@@ -37,6 +37,29 @@ export const useAuthStore = defineStore('auth', () => {
         delete axios.defaults.headers.common['Authorization']
     }
 
+    async function rehidratarSesionGuardada() {
+        const tokenGuardado = localStorage.getItem('token')
+        if (!tokenGuardado) return null
+
+        token.value = tokenGuardado
+        axios.defaults.headers.common['Authorization'] = `Bearer ${tokenGuardado}`
+
+        try {
+            const { data } = await axios.get('/api/auth/perfil')
+            guardarSesion(data, tokenGuardado)
+            return data
+        } catch (error) {
+            const statusCode = error.response?.status
+
+            if (statusCode === 401 || statusCode === 419) {
+                limpiarSesionLocal()
+                return null
+            }
+
+            throw error
+        }
+    }
+
     async function iniciarSesion(email, password) {
         const { data } = await axios.post('/api/auth/iniciar-sesion', { email, password })
         guardarSesion(data.usuario, data.token)
@@ -75,5 +98,5 @@ export const useAuthStore = defineStore('auth', () => {
         limpiarSesionLocal()
     }
 
-    return { usuario, token, estaLogueado, iniciarSesion, registrar, completarSesionOAuth, cerrarSesion, limpiarSesionLocal }
+    return { usuario, token, estaLogueado, iniciarSesion, registrar, completarSesionOAuth, cerrarSesion, limpiarSesionLocal, rehidratarSesionGuardada }
 })

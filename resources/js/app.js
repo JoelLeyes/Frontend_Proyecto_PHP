@@ -4,7 +4,7 @@ import { createPinia } from 'pinia'
 import App from './App.vue'
 import enrutador from './router'
 import axios from 'axios'
-import { initializeEcho } from './services/echo.js'
+import { useAuthStore } from './stores/auth'
 
 // URL base del backend Laravel API
 axios.defaults.baseURL = import.meta.env.VITE_API_URL || 'https://api.agendaonline.cloud-ip.cc'
@@ -16,12 +16,20 @@ if (tokenGuardado) {
     axios.defaults.headers.common['Authorization'] = `Bearer ${tokenGuardado}`
 }
 
-// Inicializar Echo también para canales públicos; el token se agrega después si existe sesión.
-initializeEcho()
-
 const app = createApp(App)
-app.use(createPinia())
+const pinia = createPinia()
+
+app.use(pinia)
 app.use(enrutador)
+
+const auth = useAuthStore(pinia)
+
+try {
+    await auth.rehidratarSesionGuardada()
+} catch (e) {
+    console.warn('No se pudo validar la sesión guardada al iniciar la app.', e)
+}
+
 app.mount('#app')
 
 // Registrar Service Worker (PWA)

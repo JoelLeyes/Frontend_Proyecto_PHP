@@ -21,12 +21,12 @@
 
     <form @submit.prevent="manejarInicioSesion">
       <div class="campo">
-        <label>Email</label>
-        <input v-model="formulario.email" type="email" placeholder="ejemplo@correo.com" required />
+        <label for="login-email">Email</label>
+        <input id="login-email" v-model="formulario.email" type="email" placeholder="ejemplo@correo.com" required />
       </div>
       <div class="campo">
-        <label>Contraseña</label>
-        <input v-model="formulario.password" type="password" placeholder="Tu contraseña" required />
+        <label for="login-password">Contraseña</label>
+        <input id="login-password" v-model="formulario.password" type="password" placeholder="Tu contraseña" required />
       </div>
 
       <p v-if="error" class="alerta alerta--error">{{ error }}</p>
@@ -118,12 +118,13 @@ const modalRol = ref({
 })
 
 function obtenerUrlOAuth(proveedor) {
-  const baseUrl = new URL(axios.defaults.baseURL || window.location.origin, window.location.origin)
+  const baseUrl = new URL(axios.defaults.baseURL || globalThis.location.origin, globalThis.location.origin)
   return new URL(`/api/auth/${proveedor}/redirect`, baseUrl).toString()
 }
 
 function iniciarOAuth(proveedor) {
-  window.location.href = obtenerUrlOAuth(proveedor)
+  auth.limpiarSesionLocal()
+  globalThis.location.href = obtenerUrlOAuth(proveedor)
 }
 
 onMounted(async () => {
