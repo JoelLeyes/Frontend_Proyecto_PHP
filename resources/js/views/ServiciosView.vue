@@ -285,6 +285,10 @@
                   <input v-model="formNuevaUbicacion.ciudad" placeholder="Se completa automáticamente" />
                 </div>
               </div>
+              <div class="campo" style="margin-top:.75rem">
+                <label>País <span style="font-weight:400">(opcional)</span></label>
+                <input v-model="formNuevaUbicacion.pais" placeholder="Se completa automáticamente" maxlength="3" />
+              </div>
               <p v-if="formNuevaUbicacion.error" class="alerta alerta--error">{{ formNuevaUbicacion.error }}</p>
               <div style="display:flex;justify-content:flex-end;gap:.5rem;margin-top:.75rem">
                 <button class="boton-secundario boton-sm" @click="resetFormUbicacion">Cancelar</button>
@@ -476,13 +480,16 @@ const tabUbicacion                = reactive({})
 const ubicacionesGuardadas        = ref([])
 const cargandoUbicacionesGuardadas = ref(false)
 const formNuevaUbicacion = reactive({
-  nombre: '', latitud: null, longitud: null, direccion: '', ciudad: '',
+  nombre: '', latitud: null, longitud: null, direccion: '', ciudad: '', pais: '',
   guardando: false, error: '',
 })
 
+const geocodificandoUbicacionProfesional = ref(false)
+const geocodificandoNuevaUbicacion = ref(false)
+
 function resetFormUbicacion() {
   Object.assign(formNuevaUbicacion, {
-    nombre: '', latitud: null, longitud: null, direccion: '', ciudad: '',
+    nombre: '', latitud: null, longitud: null, direccion: '', ciudad: '', pais: '',
     guardando: false, error: '',
   })
 }
@@ -497,6 +504,77 @@ async function cargarUbicacionesGuardadas() {
     cargandoUbicacionesGuardadas.value = false
   }
 }
+
+function formatearDireccionDesdeAddress(address) {
+  if (!address) return ''
+  const partes = []
+  if (address.road) partes.push(address.road)
+  if (address.house_number) partes.push(address.house_number)
+  if (address.neighbourhood) partes.push(address.neighbourhood)
+  if (address.suburb) partes.push(address.suburb)
+  return partes.join(' ').trim() || address.display_name || ''
+}
+
+function obtenerCiudadDesdeAddress(address) {
+  return address.city || address.town || address.village || address.county || ''
+}
+
+function obtenerPaisDesdeAddress(address) {
+  return (address.country_code || address.country || '').toUpperCase()
+}
+
+async function obtenerDireccionPorCoordenadas(lat, lon) {
+  try {
+    const { data } = await axios.get('https://nominatim.openstreetmap.org/reverse', {
+      params: {
+        lat,
+        lon,
+        format: 'json',
+        addressdetails: 1,
+        zoom: 18,
+        'accept-language': 'es',
+      },
+    })
+    return data.address || null
+  } catch (error) {
+    console.error('Error reverse geocoding:', error)
+    return null
+  }
+}
+
+watch(
+  () => [configProf.value.form.latitud, configProf.value.form.longitud],
+  async ([lat, lon]) => {
+    if (lat == null || lon == null) return
+    geocodificandoUbicacionProfesional.value = true
+    try {
+      const address = await obtenerDireccionPorCoordenadas(lat, lon)
+      if (!address) return
+      configProf.value.form.direccion = formatearDireccionDesdeAddress(address) || configProf.value.form.direccion
+      configProf.value.form.ciudad = obtenerCiudadDesdeAddress(address) || configProf.value.form.ciudad
+      configProf.value.form.pais = obtenerPaisDesdeAddress(address) || configProf.value.form.pais
+    } finally {
+      geocodificandoUbicacionProfesional.value = false
+    }
+  }
+)
+
+watch(
+  () => [formNuevaUbicacion.latitud, formNuevaUbicacion.longitud],
+  async ([lat, lon]) => {
+    if (lat == null || lon == null) return
+    geocodificandoNuevaUbicacion.value = true
+    try {
+      const address = await obtenerDireccionPorCoordenadas(lat, lon)
+      if (!address) return
+      formNuevaUbicacion.direccion = formatearDireccionDesdeAddress(address) || formNuevaUbicacion.direccion
+      formNuevaUbicacion.ciudad = obtenerCiudadDesdeAddress(address) || formNuevaUbicacion.ciudad
+      formNuevaUbicacion.pais = obtenerPaisDesdeAddress(address) || formNuevaUbicacion.pais
+    } finally {
+      geocodificandoNuevaUbicacion.value = false
+    }
+  }
+)
 
 async function asignarUbicacion(servicio, ubicacion) {
   try {
@@ -528,6 +606,7 @@ async function crearYAsignarUbicacion(servicio) {
       longitud: formNuevaUbicacion.longitud,
       direccion: formNuevaUbicacion.direccion || undefined,
       ciudad:    formNuevaUbicacion.ciudad    || undefined,
+      pais:      formNuevaUbicacion.pais      || undefined,
     })
     ubicacionesGuardadas.value.push(nuevaUbicacion)
     await asignarUbicacion(servicio, nuevaUbicacion)
