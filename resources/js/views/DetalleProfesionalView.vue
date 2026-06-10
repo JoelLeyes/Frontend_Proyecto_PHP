@@ -318,10 +318,11 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive, onMounted } from 'vue'
+import { ref, computed, reactive, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useNotificationStore } from '@/stores/notificationStore'
+import { getEcho } from '@/services/echo'
 import axios from 'axios'
 import MapaUbicacion from '@/components/MapaUbicacion.vue'
 import BotonPago from '@/components/BotonPago.vue'
@@ -355,9 +356,77 @@ function clasificacionPromedio(promedio) {
 const expandidosPaquetes  = reactive(new Set())
 const paquetesPorServicio = reactive({})
 const cargandoPaquetes    = reactive(new Set())
+const suscripcionesPaquetes = reactive(new Map())
+const solicitudesPaquetes = new Map()
 
 // Paquetes del cliente para el servicio actual (para usarlos en la reserva)
 const paquetesParaServicio = ref([])
+
+async function cargarPaquetesServicio(servicio, forzar = false) {
+  if (!forzar && paquetesPorServicio[servicio.id]) return
+
+  const solicitudActual = (solicitudesPaquetes.get(servicio.id) || 0) + 1
+  solicitudesPaquetes.set(servicio.id, solicitudActual)
+
+  cargandoPaquetes.add(servicio.id)
+  try {
+    const { data } = await axios.get(
+      `/api/profesionales/${ruta.params.id}/servicios/${servicio.id}/paquetes`
+    )
+    if (solicitudesPaquetes.get(servicio.id) === solicitudActual) {
+      paquetesPorServicio[servicio.id] = data
+    }
+  } finally {
+    if (solicitudesPaquetes.get(servicio.id) === solicitudActual) {
+      cargandoPaquetes.delete(servicio.id)
+    }
+  }
+}
+
+function suscribirPaquetesServicio(servicioId) {
+  const echo = getEcho()
+  const id = Number(servicioId)
+  if (!echo || !id || suscripcionesPaquetes.has(id)) return
+
+  const canal = `servicios.${id}.paquetes`
+  suscripcionesPaquetes.set(id, canal)
+
+  echo.channel(canal).listen('.paquete.servicio.actualizado', () => {
+    const servicio = profesional.value?.servicios?.find(s => Number(s.id) === id)
+    if (!servicio) return
+
+    if (!expandidosPaquetes.has(id) && !paquetesPorServicio[id]) return
+
+    cargarPaquetesServicio(servicio, true)
+  })
+}
+
+function sincronizarSuscripcionesPaquetes() {
+  if (!getEcho()) return
+
+  for (const servicioId of Object.keys(paquetesPorServicio)) {
+    suscribirPaquetesServicio(servicioId)
+  }
+
+  for (const servicioId of expandidosPaquetes) {
+    suscribirPaquetesServicio(servicioId)
+  }
+}
+
+function limpiarSuscripcionesPaquetes() {
+  const echo = getEcho()
+  if (echo) {
+    for (const canal of suscripcionesPaquetes.values()) {
+      try {
+        echo.leave(canal)
+      } catch (error) {
+        console.warn('No se pudo salir del canal de paquetes.', error)
+      }
+    }
+  }
+
+  suscripcionesPaquetes.clear()
+}
 
 async function togglePaquetes(servicio) {
   if (expandidosPaquetes.has(servicio.id)) {
@@ -365,17 +434,9 @@ async function togglePaquetes(servicio) {
     return
   }
   expandidosPaquetes.add(servicio.id)
-  if (!paquetesPorServicio[servicio.id]) {
-    cargandoPaquetes.add(servicio.id)
-    try {
-      const { data } = await axios.get(
-        `/api/profesionales/${ruta.params.id}/servicios/${servicio.id}/paquetes`
-      )
-      paquetesPorServicio[servicio.id] = data
-    } finally {
-      cargandoPaquetes.delete(servicio.id)
-    }
-  }
+
+  await cargarPaquetesServicio(servicio)
+  suscribirPaquetesServicio(servicio.id)
 }
 
 // ── Modal de reserva ──────────────────────────────────────────────────────────
@@ -519,6 +580,17 @@ async function cargarDatos() {
   }
 }
 
-onMounted(cargarDatos)
+onMounted(() => {
+  cargarDatos()
+  sincronizarSuscripcionesPaquetes()
+})
+
+watch(() => auth.usuario?.id, () => {
+  sincronizarSuscripcionesPaquetes()
+})
+
+onBeforeUnmount(() => {
+  limpiarSuscripcionesPaquetes()
+})
 </script>
 

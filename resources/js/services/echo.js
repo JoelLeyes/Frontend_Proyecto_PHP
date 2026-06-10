@@ -12,14 +12,10 @@ export function initializeEcho() {
         return null
     }
 
-    const token = localStorage.getItem('token')
-    if (!token) {
-        return null
-    }
-
     globalThis.Pusher = Pusher
 
     try {
+        const token = localStorage.getItem('token')
         echo = new Echo({
             broadcaster: 'reverb',
             key: appKey,
@@ -30,9 +26,9 @@ export function initializeEcho() {
             enabledTransports: ['ws', 'wss'],
             authEndpoint: (import.meta.env.VITE_API_URL || '') + '/broadcasting/auth',
             auth: {
-                headers: {
+                headers: token ? {
                     Authorization: `Bearer ${token}`,
-                },
+                } : {},
             },
         })
     } catch (e) {
@@ -65,7 +61,10 @@ export function destroyEcho() {
 export function actualizarTokenEcho(token) {
     if (!echo) return
     try {
-        echo.connector.pusher.config.auth.headers.Authorization = `Bearer ${token}`
+        const authConfig = echo.connector?.pusher?.config?.auth || {}
+        authConfig.headers = authConfig.headers || {}
+        authConfig.headers.Authorization = `Bearer ${token}`
+        echo.connector.pusher.config.auth = authConfig
     } catch (e) {
         console.warn('No se pudo actualizar el token de Echo.', e)
     }

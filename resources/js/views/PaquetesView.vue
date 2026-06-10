@@ -121,13 +121,17 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import axios from 'axios'
+import { useAuthStore } from '@/stores/auth'
+import { getEcho } from '@/services/echo'
 import BotonPago from '@/components/BotonPago.vue'
 
 const cargando = ref(true)
 const paquetes = ref([])
 const filtro   = ref('')
+const auth     = useAuthStore()
+let canalPaquetesCliente = null
 
 const FILTROS = [
   { valor: '',               label: 'Todos' },
@@ -193,6 +197,54 @@ async function cargar() {
   }
 }
 
-onMounted(cargar)
+function suscribirMisPaquetes() {
+  const echo = getEcho()
+  const clienteId = auth.usuario?.id
+
+  if (!echo || !clienteId) return
+
+  const nuevoCanal = `client.${clienteId}`
+  if (canalPaquetesCliente === nuevoCanal) return
+
+  if (canalPaquetesCliente) {
+    try {
+      echo.leave(canalPaquetesCliente)
+    } catch (error) {
+      console.warn('No se pudo salir del canal anterior de paquetes.', error)
+    }
+  }
+
+  canalPaquetesCliente = nuevoCanal
+
+  echo.private(nuevoCanal).listen('.paquete.cliente.actualizado', () => {
+    cargar()
+  })
+}
+
+function limpiarSuscripcionMisPaquetes() {
+  const echo = getEcho()
+  if (echo && canalPaquetesCliente) {
+    try {
+      echo.leave(canalPaquetesCliente)
+    } catch (error) {
+      console.warn('No se pudo limpiar el canal de paquetes del cliente.', error)
+    }
+  }
+
+  canalPaquetesCliente = null
+}
+
+onMounted(() => {
+  cargar()
+  suscribirMisPaquetes()
+})
+
+watch(() => auth.usuario?.id, () => {
+  suscribirMisPaquetes()
+})
+
+onBeforeUnmount(() => {
+  limpiarSuscripcionMisPaquetes()
+})
 </script>
 

@@ -16,10 +16,8 @@ if (tokenGuardado) {
     axios.defaults.headers.common['Authorization'] = `Bearer ${tokenGuardado}`
 }
 
-// Inicializar Echo solo si ya hay sesión
-if (tokenGuardado) {
-    initializeEcho()
-}
+// Inicializar Echo también para canales públicos; el token se agrega después si existe sesión.
+initializeEcho()
 
 const app = createApp(App)
 app.use(createPinia())
