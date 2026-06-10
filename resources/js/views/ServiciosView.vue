@@ -230,7 +230,7 @@
               </button>
               <button :class="['tab-btn', tabUbicacion[servicio.id] === 'nueva' && 'tab-btn--activo']"
                 @click="tabUbicacion[servicio.id] = 'nueva'">
-                🗺️ Agregar nueva
+                🗺️ Modificar ubi
               </button>
               <button v-if="servicio.ubicacion"
                 :class="['tab-btn', tabUbicacion[servicio.id] === 'asignada' && 'tab-btn--activo']"
@@ -255,47 +255,61 @@
                   </button>
                 </div>
               </template>
-              <div v-else class="paquetes-vacio">No hay ubicaciones guardadas. Creá una en "Agregar nueva".</div>
+              <div v-else class="paquetes-vacio">No hay ubicaciones guardadas. Creá una en "Modificar ubi".</div>
             </div>
 
             <!-- Nueva ubicación con Leaflet -->
             <div v-if="tabUbicacion[servicio.id] === 'nueva'">
+              <div class="perfil-seccion-cabecera">
+                <h3 class="perfil-seccion-titulo">Ubicación del encuentro</h3>
+                <span class="perfil-seccion-tag">Presencial / Híbrida</span>
+              </div>
+              <p class="perfil-seccion-desc">
+                Definí la ubicación donde atenderás al cliente. Se mostrará al reservar.
+              </p>
               <div class="campo">
-                <label>Nombre de la ubicación *</label>
-                <input v-model="formNuevaUbicacion.nombre" placeholder="Ej: Consultorio 1, Oficina" />
-                <small class="campo-ayuda">Con este nombre vas a identificarla para reutilizarla.</small>
+                <label>Dirección</label>
+                <input v-model="formNuevaUbicacion.direccion" placeholder="Ej: Av. 18 de Julio 1234" />
               </div>
-              <MapaUbicacion
-                :latitud="formNuevaUbicacion.latitud"
-                :longitud="formNuevaUbicacion.longitud"
-                @update:latitud="formNuevaUbicacion.latitud = $event"
-                @update:longitud="formNuevaUbicacion.longitud = $event"
-                editable
-                titulo="Hacé clic en el mapa para marcar la ubicación"
-                subtitulo="El servidor completa la dirección automáticamente."
-                height="280px"
-              />
-              <div class="campo-fila" style="margin-top:.75rem">
+              <div class="campo-fila">
                 <div class="campo">
-                  <label>Dirección <span style="font-weight:400">(opcional)</span></label>
-                  <input v-model="formNuevaUbicacion.direccion" placeholder="Se completa automáticamente" />
+                  <label>Ciudad</label>
+                  <input v-model="formNuevaUbicacion.ciudad" placeholder="Ej: Montevideo" />
                 </div>
                 <div class="campo">
-                  <label>Ciudad <span style="font-weight:400">(opcional)</span></label>
-                  <input v-model="formNuevaUbicacion.ciudad" placeholder="Se completa automáticamente" />
+                  <label>País</label>
+                  <input v-model="formNuevaUbicacion.pais" placeholder="Ej: UY" maxlength="3" />
                 </div>
               </div>
-              <div class="campo" style="margin-top:.75rem">
-                <label>País <span style="font-weight:400">(opcional)</span></label>
-                <input v-model="formNuevaUbicacion.pais" placeholder="Se completa automáticamente" maxlength="3" />
+              <div class="perfil-mapa-bloque">
+                <MapaUbicacion
+                  :latitud="formNuevaUbicacion.latitud"
+                  :longitud="formNuevaUbicacion.longitud"
+                  @update:latitud="formNuevaUbicacion.latitud = $event"
+                  @update:longitud="formNuevaUbicacion.longitud = $event"
+                  editable
+                  titulo="Hacé clic en el mapa para marcar la ubicación"
+                  subtitulo="El servidor completa la dirección automáticamente."
+                  ayuda="También podés mover el marcador arrastrándolo una vez colocado."
+                  height="280px"
+                />
+                <div class="perfil-mapa-acciones">
+                  <button type="button" class="boton-secundario" @click="usarUbicacionActualEnServicio">
+                    📍 Usar mi ubicación actual
+                  </button>
+                  <div class="perfil-coordenadas">
+                    <span>Lat: {{ mostrarCoordenadas(formNuevaUbicacion.latitud) }}</span>
+                    <span>Lng: {{ mostrarCoordenadas(formNuevaUbicacion.longitud) }}</span>
+                  </div>
+                </div>
               </div>
               <p v-if="formNuevaUbicacion.error" class="alerta alerta--error">{{ formNuevaUbicacion.error }}</p>
               <div style="display:flex;justify-content:flex-end;gap:.5rem;margin-top:.75rem">
-                <button class="boton-secundario boton-sm" @click="resetFormUbicacion">Cancelar</button>
-                <button class="boton-principal boton-sm"
-                  :disabled="!formNuevaUbicacion.nombre || !formNuevaUbicacion.latitud || formNuevaUbicacion.guardando"
+                <button type="button" class="boton-secundario boton-sm" @click="resetFormUbicacion">Cancelar</button>
+                <button type="button" class="boton-principal boton-sm"
+                  :disabled="!formNuevaUbicacion.latitud || formNuevaUbicacion.guardando"
                   @click="crearYAsignarUbicacion(servicio)">
-                  {{ formNuevaUbicacion.guardando ? 'Guardando...' : '💾 Guardar y asignar' }}
+                  {{ formNuevaUbicacion.guardando ? 'Guardando...' : '✓ Asignar ubicación' }}
                 </button>
               </div>
             </div>
@@ -429,6 +443,21 @@ function usarUbicacionActual() {
       configProf.value.mensajeExito  = 'Ubicación actual detectada. Guardá los cambios.'
     },
     () => { configProf.value.mensajeError = 'No se pudo obtener tu ubicación actual.' },
+    { enableHighAccuracy: true, timeout: 10000 }
+  )
+}
+
+function usarUbicacionActualEnServicio() {
+  if (!navigator.geolocation) {
+    formNuevaUbicacion.error = 'Tu navegador no soporta geolocalización.'
+    return
+  }
+  navigator.geolocation.getCurrentPosition(
+    ({ coords }) => {
+      formNuevaUbicacion.latitud  = coords.latitude
+      formNuevaUbicacion.longitud = coords.longitude
+    },
+    () => { formNuevaUbicacion.error = 'No se pudo obtener tu ubicación actual.' },
     { enableHighAccuracy: true, timeout: 10000 }
   )
 }
@@ -600,8 +629,12 @@ async function crearYAsignarUbicacion(servicio) {
   formNuevaUbicacion.error    = ''
   formNuevaUbicacion.guardando = true
   try {
+    // Generar nombre automático si no existe
+    const nombre = formNuevaUbicacion.nombre || 
+      (formNuevaUbicacion.ciudad || 'Ubicación') + ' - ' + new Date().toLocaleDateString('es-UY')
+    
     const { data: nuevaUbicacion } = await axios.post('/api/ubicaciones', {
-      nombre:   formNuevaUbicacion.nombre,
+      nombre,
       latitud:  formNuevaUbicacion.latitud,
       longitud: formNuevaUbicacion.longitud,
       direccion: formNuevaUbicacion.direccion || undefined,
