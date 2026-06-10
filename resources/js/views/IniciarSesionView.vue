@@ -31,6 +31,10 @@
 
       <p v-if="error" class="alerta alerta--error">{{ error }}</p>
 
+      <div class="auth-formulario__olvide">
+        <RouterLink :to="{ name: 'recuperar-contrasena' }">¿Olvidaste tu contraseña?</RouterLink>
+      </div>
+
       <button type="submit" class="boton-principal boton-bloque" :disabled="cargando">
         {{ cargando ? 'Ingresando...' : 'Ingresar' }}
       </button>

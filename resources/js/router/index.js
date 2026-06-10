@@ -29,6 +29,8 @@ const rutas = [
         children: [
             { path: 'iniciar-sesion', name: 'iniciar-sesion', component: () => import('@/views/IniciarSesionView.vue') },
             { path: 'registrarse', name: 'registrarse', component: () => import('@/views/RegistrarseView.vue') },
+            { path: 'recuperar-contrasena', name: 'recuperar-contrasena', component: () => import('@/views/RecuperarContrasenaView.vue') },
+            { path: 'nueva-contrasena', name: 'nueva-contrasena', component: () => import('@/views/NuevaContrasenaView.vue') },
         ],
     },
     {

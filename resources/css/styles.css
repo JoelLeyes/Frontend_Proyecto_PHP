@@ -563,6 +563,9 @@ p:last-child { margin-bottom: 0; }
   color: var(--color-texto-suave);
 }
 .auth-formulario__pie a { font-weight: 600; color: var(--color-primario); }
+.auth-formulario__olvide { text-align: right; margin-top: -.25rem; margin-bottom: .75rem; font-size: .875rem; }
+.auth-formulario__olvide a { color: var(--color-texto-suave); }
+.auth-formulario__olvide a:hover { color: var(--color-primario); }
 
 /* ===== Layout Panel lateral ===== */
 .layout-panel { display: flex; min-height: 100vh; }
