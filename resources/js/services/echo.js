@@ -17,7 +17,7 @@ export function initializeEcho() {
         return null
     }
 
-    window.Pusher = Pusher
+    globalThis.Pusher = Pusher
 
     try {
         echo = new Echo({
@@ -41,12 +41,25 @@ export function initializeEcho() {
         return null
     }
 
-    window.Echo = echo
+    globalThis.Echo = echo
     return echo
 }
 
 export function getEcho() {
     return echo
+}
+
+export function destroyEcho() {
+    if (!echo) return
+
+    try {
+        echo.disconnect()
+    } catch (e) {
+        console.warn('No se pudo desconectar Echo limpiamente.', e)
+    }
+
+    echo = null
+    globalThis.Echo = null
 }
 
 export function actualizarTokenEcho(token) {

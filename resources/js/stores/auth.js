@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import axios from 'axios'
-import { initializeEcho, actualizarTokenEcho } from '../services/echo.js'
+import { destroyEcho, initializeEcho, actualizarTokenEcho } from '../services/echo.js'
 
 /**
  * Store de autenticación.
@@ -29,6 +29,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     function limpiarSesionLocal() {
+        destroyEcho()
         usuario.value = null
         token.value   = null
         localStorage.removeItem('usuario')

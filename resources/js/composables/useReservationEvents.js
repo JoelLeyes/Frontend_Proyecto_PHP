@@ -1,4 +1,4 @@
-import { onMounted, onUnmounted, watch } from 'vue'
+import { onMounted, watch } from 'vue'
 import { getEcho } from '../services/echo.js'
 import { useNotificationStore } from '../stores/notificationStore.js'
 import { useAuthStore } from '../stores/auth.js'
@@ -11,6 +11,7 @@ const recientes = new Set()
 
 // Guard: evita suscribirse dos veces al mismo canal
 let canalActivo = null
+let echoSuscrito = null
 
 function generarNotificacion(reserva, accion, userId) {
     const esCliente     = Number(userId) === Number(reserva.cliente_id)
@@ -18,8 +19,20 @@ function generarNotificacion(reserva, accion, userId) {
     const servicio      = reserva.servicio?.nombre || 'Servicio'
     const cliente       = reserva.cliente?.name    || 'Un cliente'
 
-    if (accion === 'reprogramada' && esCliente)     return { icono: '📅', texto: `Tu reserva de ${servicio} fue reprogramada`,                 tipo: 'info'    }
-    if (accion === 'reprogramada' && esProfesional) return { icono: '📅', texto: `La reserva de ${cliente} para ${servicio} fue reprogramada`,  tipo: 'info'    }
+    const notificacionReprogramada = (() => {
+        if (accion === 'reprogramada' && esCliente) {
+            return { icono: '📅', texto: `Tu reserva de ${servicio} fue reprogramada`, tipo: 'info' }
+        }
+
+        if (accion === 'reprogramada' && esProfesional) {
+            return { icono: '📅', texto: `La reserva de ${cliente} para ${servicio} fue reprogramada`, tipo: 'info' }
+        }
+
+        return null
+    })()
+
+    if (notificacionReprogramada) return notificacionReprogramada
+
     if (reserva.estado === 'pendiente'  && esProfesional) return { icono: '📅', texto: `Nueva reserva de ${cliente} para ${servicio}`,         tipo: 'info'    }
     if (reserva.estado === 'confirmada' && esCliente)     return { icono: '✅', texto: `Tu reserva de ${servicio} fue confirmada`,              tipo: 'success' }
     if (reserva.estado === 'cancelada'  && esCliente)     return { icono: '❌', texto: `Tu reserva de ${servicio} fue cancelada`,              tipo: 'error'   }
@@ -41,8 +54,18 @@ export function useReservationEvents() {
 
         // Evitar suscribirse dos veces al mismo canal
         const nombreCanal = `reservas.${userId}`
-        if (canalActivo === nombreCanal) return
+        if (canalActivo === nombreCanal && echoSuscrito === echo) return
+
+        if (canalActivo && canalActivo !== nombreCanal && echoSuscrito) {
+            try {
+                echoSuscrito.leave(canalActivo)
+            } catch (e) {
+                console.warn('No se pudo dejar el canal anterior de reservas.', e)
+            }
+        }
+
         canalActivo = nombreCanal
+        echoSuscrito = echo
 
         echo.private(nombreCanal)
             .listen('.reserva.actualizada', ({ reserva, accion = '' }) => {
@@ -76,16 +99,22 @@ export function useReservationEvents() {
         const userId = auth.usuario?.id
         if (echo && userId) echo.leave(`reservas.${userId}`)
         canalActivo = null
+        echoSuscrito = null
     }
 
     onMounted(escuchar)
-    onUnmounted(dejar)
 
     // Reintento: si el usuario ya estaba logueado cuando monta el componente
     // pero Echo aún no tenía el token, la suscripción habrá fallado.
     // Este watch vuelve a intentarlo cuando auth.usuario cambia.
     watch(() => auth.usuario?.id, (nuevoId) => {
-        if (nuevoId && canalActivo !== `reservas.${nuevoId}`) {
+        if (!nuevoId) {
+            canalActivo = null
+            echoSuscrito = null
+            return
+        }
+
+        if (canalActivo !== `reservas.${nuevoId}` || !echoSuscrito || echoSuscrito !== getEcho()) {
             canalActivo = null
             escuchar()
         }
