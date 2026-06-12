@@ -227,29 +227,29 @@
           </div>
           <div class="modal__cuerpo">
             <div class="campo">
-              <label>Nombre completo</label>
-              <input v-model="modalEditar.form.name" type="text" />
+              <label for="admin-edit-name">Nombre completo</label>
+              <input id="admin-edit-name" v-model="modalEditar.form.name" type="text" />
             </div>
             <div class="campo">
-              <label>Email</label>
-              <input v-model="modalEditar.form.email" type="email" />
+              <label for="admin-edit-email">Email</label>
+              <input id="admin-edit-email" v-model="modalEditar.form.email" type="email" />
             </div>
             <div class="campo">
-              <label>Teléfono</label>
-              <input v-model="modalEditar.form.telefono" type="text" placeholder="+598 99 ..." />
+              <label for="admin-edit-telefono">Teléfono</label>
+              <input id="admin-edit-telefono" v-model="modalEditar.form.telefono" type="text" placeholder="+598 99 ..." />
             </div>
             <div class="campo-fila">
               <div class="campo">
-                <label>Rol</label>
-                <select v-model="modalEditar.form.rol">
+                <label for="admin-edit-rol">Rol</label>
+                <select id="admin-edit-rol" v-model="modalEditar.form.rol">
                   <option value="cliente">Cliente</option>
                   <option value="profesional">Profesional</option>
                   <option value="admin">Admin</option>
                 </select>
               </div>
               <div class="campo">
-                <label>Estado de cuenta</label>
-                <select v-model="modalEditar.form.activo">
+                <label for="admin-edit-activo">Estado de cuenta</label>
+                <select id="admin-edit-activo" v-model="modalEditar.form.activo">
                   <option :value="true">Activa</option>
                   <option :value="false">Inactiva</option>
                 </select>
@@ -272,10 +272,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import axios from 'axios'
+import { getEcho, initializeEcho } from '@/services/echo.js'
+import { useAuthStore } from '@/stores/auth'
 import { useNotificationStore } from '@/stores/notificationStore'
 
+const auth = useAuthStore()
 const notif = useNotificationStore()
 
 const TABS = [
@@ -297,6 +300,17 @@ const filtrosU  = ref({ busqueda: '', rol: '', activo: '' })
 const filtrosR  = ref({ busqueda: '', estado: '', desde: '', hasta: '' })
 
 let timerU = null, timerR = null
+let timerRefrescoPanel = null
+let echoAdmin = null
+const canalAdmin = 'admin.panel'
+const EVENTOS_ADMIN = [
+  '.reserva.actualizada',
+  '.cobro.actualizado',
+  '.servicio.actualizado',
+  '.paquete.servicio.actualizado',
+  '.paquete.cliente.actualizado',
+  '.admin.panel.actualizado',
+]
 
 const ETIQUETAS = { pendiente: 'Pendiente', confirmada: 'Confirmada', pagada: 'Pagada', en_curso: 'En curso', finalizada: 'Finalizada', cancelada: 'Cancelada' }
 const INSIGNIAS = { pendiente: 'insignia--pendiente', confirmada: 'insignia--confirmada', pagada: 'insignia--pagada', en_curso: 'insignia--en-curso', finalizada: 'insignia--finalizada', cancelada: 'insignia--cancelada' }
@@ -310,6 +324,55 @@ function formatFecha(iso) {
 function formatFechaHora(iso) {
   if (!iso) return '—'
   return new Date(iso).toLocaleString('es-UY', { dateStyle: 'short', timeStyle: 'short' })
+}
+
+function refrescarPanelEnVivo() {
+  clearTimeout(timerRefrescoPanel)
+  timerRefrescoPanel = setTimeout(() => {
+    Promise.allSettled([
+      cargarStats(),
+      cargarUsuarios(usuarios.value.current_page || 1),
+      cargarReservas(reservas.value.current_page || 1),
+    ])
+  }, 250)
+}
+
+function suscribirPanelAdmin() {
+  if (auth.usuario?.rol !== 'admin') return
+
+  const echo = getEcho() || initializeEcho()
+  if (!echo) return
+
+  if (echoAdmin === echo) return
+
+  if (echoAdmin) {
+    try {
+      echoAdmin.leave(canalAdmin)
+    } catch (error) {
+      console.warn('No se pudo salir del canal admin anterior.', error)
+    }
+  }
+
+  echoAdmin = echo
+
+  const canal = echo.private(canalAdmin)
+  EVENTOS_ADMIN.forEach((evento) => {
+    canal.listen(evento, refrescarPanelEnVivo)
+  })
+}
+
+function limpiarPanelAdmin() {
+  clearTimeout(timerRefrescoPanel)
+
+  if (echoAdmin) {
+    try {
+      echoAdmin.leave(canalAdmin)
+    } catch (error) {
+      console.warn('No se pudo limpiar el canal admin.', error)
+    }
+  }
+
+  echoAdmin = null
 }
 
 // ── Estadísticas ──────────────────────────────────────────────────────────────
@@ -402,7 +465,12 @@ async function cargarReservas(pagina = 1) {
 }
 
 onMounted(async () => {
+  suscribirPanelAdmin()
   await Promise.all([cargarStats(), cargarUsuarios(), cargarReservas()])
   cargando.value = false
+})
+
+onBeforeUnmount(() => {
+  limpiarPanelAdmin()
 })
 </script>
