@@ -168,8 +168,8 @@
               <span style="color:var(--color-texto-suave)">{{ formatearFecha(modalCancelar.reserva?.fecha_hora) }}</span>
             </p>
             <div class="campo">
-              <label>Motivo <span style="font-weight:400">(opcional)</span></label>
-              <textarea v-model="modalCancelar.motivo" rows="2" placeholder="Ej: surgió un imprevisto, reagendar para la semana que viene..."></textarea>
+              <label for="reserva-cancelar-motivo">Motivo <span style="font-weight:400">(opcional)</span></label>
+              <textarea id="reserva-cancelar-motivo" v-model="modalCancelar.motivo" rows="2" placeholder="Ej: surgió un imprevisto, reagendar para la semana que viene..."></textarea>
             </div>
             <p v-if="modalCancelar.error" class="alerta alerta--error">{{ modalCancelar.error }}</p>
           </div>
@@ -196,8 +196,8 @@
           </div>
           <div class="modal__cuerpo">
             <div class="campo">
-              <label>Nueva fecha</label>
-              <input type="date" v-model="modalReprogramar.fecha" :min="hoy" @change="cargarSlotsReprogramar" />
+              <label for="reserva-reprogramar-fecha">Nueva fecha</label>
+              <input id="reserva-reprogramar-fecha" type="date" v-model="modalReprogramar.fecha" :min="hoy" @change="cargarSlotsReprogramar" />
             </div>
 
             <div v-if="modalReprogramar.cargandoSlots" class="cargando" style="padding:1rem">
@@ -246,7 +246,7 @@
 
           <div class="modal__cuerpo">
             <div class="campo">
-              <label>Calificación</label>
+              <p class="campo__titulo">Calificación</p>
               <div class="selector-estrellas">
                 <button
                   v-for="estrella in 5"
@@ -261,8 +261,8 @@
             </div>
 
             <div class="campo">
-              <label>Comentario <span style="font-weight:400">(opcional)</span></label>
-              <textarea v-model="modalResena.comentario" rows="3" placeholder="Contá cómo fue tu experiencia..."></textarea>
+              <label for="reserva-resena-comentario">Comentario <span style="font-weight:400">(opcional)</span></label>
+              <textarea id="reserva-resena-comentario" v-model="modalResena.comentario" rows="3" placeholder="Contá cómo fue tu experiencia..."></textarea>
             </div>
 
             <p v-if="modalResena.error" class="alerta alerta--error">{{ modalResena.error }}</p>
@@ -355,6 +355,7 @@ const notif     = useNotificationStore()
 const { confirmar: pedirConfirmacion } = useConfirm()
 
 const esProfesional  = computed(() => auth.usuario?.rol === 'profesional')
+const esAdmin        = computed(() => auth.usuario?.rol === 'admin')
 const filtroEstado   = ref('')
 const procesando     = ref(null)
 const hoy            = new Date().toISOString().slice(0, 10)
@@ -571,20 +572,43 @@ async function pagoExitoso() {
 }
 
 let canalWs = null
+let canalActivo = null
 
 function manejarActualizacion({ reserva }) {
-    const indice = store.reservas.findIndex(r => r.id === reserva.id)
-    if (indice !== -1) {
-        store.reservas[indice] = reserva
+  if (reserva) {
+    const existe = store.reservas.some(r => r.id === reserva.id)
+    if (existe) {
+      const indice = store.reservas.findIndex(r => r.id === reserva.id)
+      store.reservas[indice] = reserva
     } else {
-        cargarReservas(store.paginacion?.current_page || 1)
+      cargarReservas(store.paginacion?.current_page || 1)
     }
+  }
 }
 
 function suscribirWebSocket() {
-    const echo = getEcho()
-    if (!echo || !auth.usuario?.id) return
-    canalWs = echo.private(`reservas.${auth.usuario.id}`)
+  const echo = getEcho()
+  if (!echo) return
+
+  let canalDeseado = null
+  if (esAdmin.value) {
+    canalDeseado = 'admin.panel'
+  } else if (auth.usuario?.id) {
+    canalDeseado = `reservas.${auth.usuario.id}`
+  }
+
+  if (!canalDeseado || canalActivo === canalDeseado) return
+
+  if (canalWs && canalActivo) {
+    try {
+      echo.leave(canalActivo)
+    } catch (error) {
+      console.warn('No se pudo salir del canal anterior de reservas.', error)
+    }
+  }
+
+  canalActivo = canalDeseado
+  canalWs = echo.private(canalDeseado)
     canalWs.listen('.reserva.actualizada', manejarActualizacion)
 }
 
@@ -594,9 +618,16 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
-    if (canalWs) {
-        canalWs.stopListening('.reserva.actualizada', manejarActualizacion)
-        canalWs = null
+  if (canalWs && canalActivo) {
+    try {
+      canalWs.stopListening('.reserva.actualizada', manejarActualizacion)
+      canalWs.subscription?.unsubscribe?.()
+    } catch (error) {
+      console.warn('No se pudo limpiar el canal de reservas.', error)
     }
+  }
+
+  canalWs = null
+  canalActivo = null
 })
 </script>
