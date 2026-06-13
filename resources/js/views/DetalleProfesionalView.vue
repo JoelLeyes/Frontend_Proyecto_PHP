@@ -516,7 +516,8 @@ async function cargarSlots() {
       `/api/profesionales/${ruta.params.id}/disponibilidad/horarios`,
       { params: { fecha: modal.value.fecha, servicio_id: modal.value.servicio.id } }
     )
-    modal.value.slots = data
+    const ahora = new Date()
+    modal.value.slots = data.filter(slot => new Date(slot.inicio) > ahora)
   } catch {
     modal.value.slots = []
   } finally {
