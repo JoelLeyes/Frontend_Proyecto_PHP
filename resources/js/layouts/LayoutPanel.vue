@@ -13,12 +13,4 @@
 <script setup>
 import NavBar from '@/components/NavBar.vue'
 import NotificationsCenter from '@/components/NotificationsCenter.vue'
-import { useReservationEvents } from '@/composables/useReservationEvents.js'
-import { useNotificationStore } from '@/stores/notificationStore.js'
-import { onMounted } from 'vue'
-
-useReservationEvents()
-
-const notifStore = useNotificationStore()
-onMounted(() => notifStore.cargarDesdeApi())
 </script>

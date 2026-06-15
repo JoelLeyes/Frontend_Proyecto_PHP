@@ -580,16 +580,11 @@ function manejarActualizacion() {
 
 function suscribirWebSocket() {
   const echo = getEcho()
-  if (!echo) return
+  if (!echo || !esAdmin.value) return
 
-  let canalDeseado = null
-  if (esAdmin.value) {
-    canalDeseado = 'admin.panel'
-  } else if (auth.usuario?.id) {
-    canalDeseado = `reservas.${auth.usuario.id}`
-  }
+  const canalDeseado = 'admin.panel'
 
-  if (!canalDeseado || canalActivo === canalDeseado) return
+  if (canalActivo === canalDeseado) return
 
   if (canalWs && canalActivo) {
     try {

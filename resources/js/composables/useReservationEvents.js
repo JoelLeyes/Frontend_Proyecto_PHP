@@ -100,7 +100,6 @@ export function useReservationEvents() {
                 const notif = generarNotificacion(reserva, accion, userId)
                 if (!notif) return
 
-                notifStore.agregarAlHistorial(notif)
                 notifStore.addNotification({
                     type:    notif.tipo,
                     title:   TITULOS[notif.tipo] || 'Aviso',

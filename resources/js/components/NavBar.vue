@@ -115,6 +115,8 @@
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useNotificationStore } from '@/stores/notificationStore'
+import { useReservationEvents } from '@/composables/useReservationEvents.js'
+import { useNotificationEvents } from '@/composables/useNotificationEvents.js'
 import { useRouter } from 'vue-router'
 
 const auth        = useAuthStore()
@@ -124,6 +126,9 @@ const menuAbierto  = ref(false)
 const campanaAbierta = ref(false)
 const perfilRef    = ref(null)
 const campanaRef   = ref(null)
+
+useReservationEvents()
+useNotificationEvents()
 
 const iniciales = computed(() => {
     const nombre = auth.usuario?.name || ''

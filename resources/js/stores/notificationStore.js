@@ -61,8 +61,16 @@ export const useNotificationStore = defineStore('notifications', () => {
     // ── Historial de campana (persistente en sesión) ─────────────────────────
     const noLeidas = computed(() => historial.value.filter(n => !n.leida).length)
 
-    const agregarAlHistorial = ({ tipo = 'info', icono = '🔔', texto = '' }) => {
-        historial.value.unshift({ id: Date.now(), leida: false, tiempo: new Date(), tipo, icono, texto })
+    const agregarAlHistorial = ({ id = Date.now(), tipo = 'info', icono = '🔔', texto = '', tiempo = new Date(), leida = false }) => {
+        if (historial.value.some(n => n.id === id)) return
+        historial.value.unshift({
+            id,
+            leida,
+            tiempo: tiempo instanceof Date ? tiempo : new Date(tiempo),
+            tipo,
+            icono,
+            texto,
+        })
         if (historial.value.length > 50) historial.value.pop()
     }
 
