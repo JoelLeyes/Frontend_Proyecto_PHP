@@ -1,1 +1,0 @@
-import{_ as t}from"./NavBar-CV6-6Lj9.js";import{c as a,a as e,b as r,r as n,o as c}from"./index-CpBQou5g.js";import"./notificationStore-C8YxfpS5.js";const u={__name:"LayoutPublico",setup(s){return(_,m)=>{const o=n("RouterView");return c(),a("div",null,[e(t),r("main",null,[e(o)])])}}};export{u as default};
