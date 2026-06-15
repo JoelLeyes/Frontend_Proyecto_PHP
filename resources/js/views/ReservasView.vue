@@ -574,16 +574,8 @@ async function pagoExitoso() {
 let canalWs = null
 let canalActivo = null
 
-function manejarActualizacion({ reserva }) {
-  if (reserva) {
-    const existe = store.reservas.some(r => r.id === reserva.id)
-    if (existe) {
-      const indice = store.reservas.findIndex(r => r.id === reserva.id)
-      store.reservas[indice] = reserva
-    } else {
-      cargarReservas(store.paginacion?.current_page || 1)
-    }
-  }
+function manejarActualizacion() {
+  cargarReservas(store.paginacion?.current_page || 1)
 }
 
 function suscribirWebSocket() {

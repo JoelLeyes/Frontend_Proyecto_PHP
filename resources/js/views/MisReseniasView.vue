@@ -185,8 +185,7 @@ function escucharResenas() {
 
   echo
     .private(channelName)
-    .listen('.reserva.actualizada', ({ reserva }) => {
-      if (!reserva?.resena) return
+    .listen('.reserva.actualizada', () => {
       const paginaActual = paginacion.value?.current_page || 1
       cargarResenas(paginaActual)
     })
