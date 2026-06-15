@@ -97,7 +97,28 @@ function clasificacionPromedio(promedio) {
 async function obtenerProfesionales() {
   cargando.value = true
   try {
-    const { data } = await axios.get('/api/profesionales', { params: filtros.value })
+    const params = {
+      busqueda:  filtros.value.busqueda,
+      modalidad: filtros.value.modalidad,
+    }
+
+    if (filtros.value.ciudad.trim()) {
+      try {
+        const geo = await axios.get('https://nominatim.openstreetmap.org/search', {
+          params: { q: filtros.value.ciudad, format: 'json', limit: 1 },
+          headers: { 'Accept-Language': 'es' },
+        })
+        if (geo.data[0]) {
+          params.lat   = geo.data[0].lat
+          params.lng   = geo.data[0].lon
+          params.radio = 50
+        }
+      } catch {
+        // si nominatim falla no aplica filtro de ciudad
+      }
+    }
+
+    const { data } = await axios.get('/api/profesionales', { params })
     profesionales.value = data.data
   } finally {
     cargando.value = false
