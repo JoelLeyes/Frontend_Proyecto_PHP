@@ -13,6 +13,19 @@ const recientes = new Set()
 let canalActivo = null
 let echoSuscrito = null
 
+function construirReservaSintetica(payload = {}) {
+    const reserva = payload.reserva || {}
+
+    return {
+        id: payload.reserva_id ?? reserva.id ?? null,
+        cliente_id: payload.cliente_id ?? reserva.cliente_id ?? null,
+        profesional_id: payload.profesional_id ?? reserva.profesional_id ?? null,
+        estado: payload.estado ?? reserva.estado ?? '',
+        servicio: reserva.servicio ?? payload.servicio ?? null,
+        cliente: reserva.cliente ?? payload.cliente ?? null,
+    }
+}
+
 function generarNotificacion(reserva, accion, userId) {
     const esCliente     = Number(userId) === Number(reserva.cliente_id)
     const esProfesional = Number(userId) === Number(reserva.profesional_id)
@@ -68,18 +81,20 @@ export function useReservationEvents() {
         echoSuscrito = echo
 
         echo.private(nombreCanal)
-            .listen('.reserva.actualizada', ({ reserva, accion = '' }) => {
-                if (!reserva) return
+            .listen('.reserva.actualizada', (payload = {}) => {
+                const accion = payload.accion ?? ''
+                const reserva = construirReservaSintetica(payload)
+                if (!reserva.id) return
 
                 // Dedup: ignorar si este mismo evento ya se procesó hace menos de 3s
-                const key = `${reserva.id}:${reserva.updated_at}:${accion}`
+                const key = `${reserva.id}:${reserva.estado}:${accion}:${reserva.cliente_id}:${reserva.profesional_id}`
                 if (recientes.has(key)) return
                 recientes.add(key)
                 setTimeout(() => recientes.delete(key), 3000)
 
-                // Actualizar store si la reserva está en la lista actual
-                const idx = reservasStore.reservas.findIndex(r => r.id === reserva.id)
-                if (idx !== -1) reservasStore.reservas[idx] = reserva
+                // Refrescar la página visible; así el panel queda consistente aunque el payload sea mínimo.
+                const paginaActual = reservasStore.paginacion?.current_page || 1
+                reservasStore.obtenerReservas({ page: paginaActual }).catch(() => {})
 
                 // Generar y mostrar notificación
                 const notif = generarNotificacion(reserva, accion, userId)
