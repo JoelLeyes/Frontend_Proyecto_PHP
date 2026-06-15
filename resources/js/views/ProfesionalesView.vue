@@ -103,6 +103,7 @@ async function obtenerProfesionales() {
     }
 
     if (filtros.value.ciudad.trim()) {
+      params.ciudad = filtros.value.ciudad.trim()
       try {
         const geo = await axios.get('https://nominatim.openstreetmap.org/search', {
           params: { q: filtros.value.ciudad, format: 'json', limit: 1 },
@@ -114,7 +115,7 @@ async function obtenerProfesionales() {
           params.radio = 50
         }
       } catch {
-        // si nominatim falla no aplica filtro de ciudad
+        // si nominatim falla igual filtra por texto de ciudad
       }
     }
 
