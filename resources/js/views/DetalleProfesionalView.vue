@@ -53,7 +53,10 @@
 
           <!-- Acciones del servicio -->
           <div class="servicio-det__acciones">
-            <button class="boton-principal" @click="abrirReserva(servicio)">Reservar</button>
+            <template v-if="auth.usuario?.rol === 'profesional'">
+              <p class="servicio-det__no-reserva">Solo los clientes pueden realizar reservas.</p>
+            </template>
+            <button v-else class="boton-principal" @click="abrirReserva(servicio)">Reservar</button>
             <button class="boton-secundario boton-paquetes"
               @click="togglePaquetes(servicio)">
               📦 {{ expandidosPaquetes.has(servicio.id) ? 'Ocultar paquetes' : 'Ver paquetes' }}
