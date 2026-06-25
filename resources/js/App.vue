@@ -1,7 +1,7 @@
 <template>
   <div style="display:contents">
-    <RouterView /> // Renderiza el componente correspondiente a la ruta actual
-    <ConfirmDialog /> // Componente de diálogo de confirmación global
+    <RouterView /> 
+    <ConfirmDialog /> 
   </div>
 </template>
 

@@ -47,7 +47,7 @@
             {{ verContrasena ? '🙈' : '👁️' }}
           </button>
         </div>
-        <ul v-if="formulario.password" class="requisitos-contrasena"> // Lista de requisitos de la contraseña
+        <ul v-if="formulario.password" class="requisitos-contrasena">
           <li :class="['requisito', requisitos.longitud  ? 'requisito--ok' : 'requisito--pendiente']">{{ requisitos.longitud  ? '✅' : '❌' }} Mínimo 8 caracteres</li>
           <li :class="['requisito', requisitos.mayuscula ? 'requisito--ok' : 'requisito--pendiente']">{{ requisitos.mayuscula ? '✅' : '❌' }} Al menos una mayúscula</li>
           <li :class="['requisito', requisitos.minuscula ? 'requisito--ok' : 'requisito--pendiente']">{{ requisitos.minuscula ? '✅' : '❌' }} Al menos una minúscula</li>

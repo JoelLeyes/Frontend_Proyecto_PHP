@@ -8,7 +8,7 @@
       </div>
       <div>
         <h1 class="panel-saludo__titulo">Bienvenido, {{ auth.usuario?.name?.split(' ')[0] }} 👋</h1>
-        <p class="panel-saludo__rol">{{ etiquetaRol }}</p> // Muestra el rol del usuario (Cliente, Profesional o Administrador)
+        <p class="panel-saludo__rol">{{ etiquetaRol }}</p>
       </div>
     </div>
 

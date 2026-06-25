@@ -218,7 +218,7 @@
               <div v-else class="alerta alerta--info" style="margin-top:.5rem">
                 No hay horarios disponibles para esta fecha.
               </div>
-            </template>//
+            </template>
 
             <p v-if="modalReprogramar.error" class="alerta alerta--error">{{ modalReprogramar.error }}</p>
           </div>
