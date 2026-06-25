@@ -76,7 +76,7 @@ const filtros       = ref({ busqueda: '', modalidad: '', ciudad: '' })
 
 let temporizador
 
-function iniciales(nombre) {
+function iniciales(nombre) { // Devuelve las iniciales de un nombre
   if (!nombre) return '?'
   return nombre.split(' ').slice(0, 2).map(p => p[0]).join('').toUpperCase()
 }
@@ -86,7 +86,7 @@ function busquedaConRetraso() {
   temporizador = setTimeout(obtenerProfesionales, 400)
 }
 
-function clasificacionPromedio(promedio) {
+function clasificacionPromedio(promedio) { // Devuelve una descripción de la calificación promedio
   if (promedio >= 4.6) return 'Excelente'
   if (promedio >= 4.1) return 'Muy bueno'
   if (promedio >= 3.1) return 'Bueno'
@@ -94,7 +94,7 @@ function clasificacionPromedio(promedio) {
   return 'A mejorar'
 }
 
-async function obtenerProfesionales() {
+async function obtenerProfesionales() { // Obtiene la lista de profesionales según los filtros
   cargando.value = true
   try {
     const params = {
@@ -105,7 +105,7 @@ async function obtenerProfesionales() {
     if (filtros.value.ciudad.trim()) {
       params.ciudad = filtros.value.ciudad.trim()
       try {
-        const geo = await axios.get('https://nominatim.openstreetmap.org/search', {
+        const geo = await axios.get('https://nominatim.openstreetmap.org/search', { // Geocodificación de la ciudad para obtener latitud y longitud
           params: { q: filtros.value.ciudad, format: 'json', limit: 1 },
           headers: { 'Accept-Language': 'es' },
         })
@@ -119,7 +119,7 @@ async function obtenerProfesionales() {
       }
     }
 
-    const { data } = await axios.get('/api/profesionales', { params })
+    const { data } = await axios.get('/api/profesionales', { params }) // Llamada a la API para obtener los profesionales según los filtros
     profesionales.value = data.data
   } finally {
     cargando.value = false

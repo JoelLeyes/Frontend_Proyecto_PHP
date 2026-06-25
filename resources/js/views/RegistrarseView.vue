@@ -47,7 +47,7 @@
             {{ verContrasena ? '🙈' : '👁️' }}
           </button>
         </div>
-        <ul v-if="formulario.password" class="requisitos-contrasena">
+        <ul v-if="formulario.password" class="requisitos-contrasena"> // Lista de requisitos de la contraseña
           <li :class="['requisito', requisitos.longitud  ? 'requisito--ok' : 'requisito--pendiente']">{{ requisitos.longitud  ? '✅' : '❌' }} Mínimo 8 caracteres</li>
           <li :class="['requisito', requisitos.mayuscula ? 'requisito--ok' : 'requisito--pendiente']">{{ requisitos.mayuscula ? '✅' : '❌' }} Al menos una mayúscula</li>
           <li :class="['requisito', requisitos.minuscula ? 'requisito--ok' : 'requisito--pendiente']">{{ requisitos.minuscula ? '✅' : '❌' }} Al menos una minúscula</li>
@@ -98,7 +98,7 @@ const cargando       = ref(false)
 const verContrasena  = ref(false)
 const verConfirmacion = ref(false)
 
-const requisitos = computed(() => {
+const requisitos = computed(() => { // Computed property que verifica los requisitos de la contraseña
   const p = formulario.value.password
   return {
     longitud:  p.length >= 8,
@@ -110,18 +110,18 @@ const requisitos = computed(() => {
   }
 })
 
-async function manejarRegistro() {
+async function manejarRegistro() { // Maneja el registro del usuario al enviar el formulario
   if (cargando.value) return
   error.value = ''
 
-  if (!requisitos.value.coinciden) {
+  if (!requisitos.value.coinciden) { // Verifica si las contraseñas coinciden antes de enviar el formulario
     error.value = 'Las contraseñas no coinciden.'
     return
   }
 
   cargando.value = true
   auth.limpiarSesionLocal()
-  try {
+  try { // Intenta registrar al usuario con los datos del formulario
     await auth.registrar(formulario.value)
     enrutador.push({ name: 'panel' })
   } catch (e) {

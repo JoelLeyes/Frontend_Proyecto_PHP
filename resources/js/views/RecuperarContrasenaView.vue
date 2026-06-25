@@ -37,13 +37,13 @@ import axios from 'axios'
 const email    = ref('')
 const error    = ref('')
 const cargando = ref(false)
-const enviado  = ref(false)
+const enviado  = ref(false) // Indica si el email de recuperación fue enviado exitosamente
 
 async function enviar() {
   if (cargando.value) return
   error.value    = ''
   cargando.value = true
-  try {
+  try { // Envía la solicitud de recuperación de contraseña al backend
     await axios.post('/api/auth/recuperar-contrasena', { email: email.value })
     enviado.value = true
   } catch (e) {

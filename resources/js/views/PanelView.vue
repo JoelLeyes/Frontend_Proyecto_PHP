@@ -8,7 +8,7 @@
       </div>
       <div>
         <h1 class="panel-saludo__titulo">Bienvenido, {{ auth.usuario?.name?.split(' ')[0] }} 👋</h1>
-        <p class="panel-saludo__rol">{{ etiquetaRol }}</p>
+        <p class="panel-saludo__rol">{{ etiquetaRol }}</p> // Muestra el rol del usuario (Cliente, Profesional o Administrador)
       </div>
     </div>
 
@@ -165,13 +165,13 @@ import { useAuthStore } from '@/stores/auth'
 import axios from 'axios'
 
 const auth = useAuthStore()
-const rol  = computed(() => auth.usuario?.rol)
+const rol  = computed(() => auth.usuario?.rol) // Computed property que devuelve el rol del usuario actual
 
 const cargando         = ref(true)
 const proximasReservas = ref([])
 const pendientes       = ref([])
 
-const iniciales = computed(() => {
+const iniciales = computed(() => { // Computed property que devuelve las iniciales del nombre del usuario
   const nombre = auth.usuario?.name || ''
   return nombre.split(' ').slice(0, 2).map(p => p[0]).join('').toUpperCase() || '?'
 })
@@ -184,7 +184,7 @@ const etiquetaRol = computed(() => {
 const ETIQUETAS = { pendiente: 'Pendiente', confirmada: 'Confirmada', pagada: 'Pagada', en_curso: 'En curso', finalizada: 'Finalizada', cancelada: 'Cancelada' }
 const INSIGNIAS = { pendiente: 'insignia--pendiente', confirmada: 'insignia--confirmada', pagada: 'insignia--pagada', en_curso: 'insignia--en-curso', finalizada: 'insignia--finalizada', cancelada: 'insignia--cancelada' }
 
-function etiquetaEstado(e) { return ETIQUETAS[e] || e }
+function etiquetaEstado(e) { return ETIQUETAS[e] || e } // Devuelve la etiqueta legible para un estado de reserva
 function insigniaEstado(e) { return INSIGNIAS[e] || '' }
 
 function formatearFecha(f) {
@@ -192,7 +192,7 @@ function formatearFecha(f) {
   return new Date(f).toLocaleString('es-UY', { dateStyle: 'medium', timeStyle: 'short' })
 }
 
-async function cargarDashboard() {
+async function cargarDashboard() { // Carga las reservas próximas (para clientes) o pendientes (para profesionales) al montar el componente
   cargando.value = true
   try {
     if (rol.value === 'cliente') {
@@ -209,7 +209,7 @@ async function cargarDashboard() {
         params: { estado: 'pendiente', page: 1 }
       })
       pendientes.value = (data.data || [])
-        .sort((a, b) => new Date(a.fecha_hora) - new Date(b.fecha_hora))
+        .sort((a, b) => new Date(a.fecha_hora) - new Date(b.fecha_hora)) // Ordena por fecha ascendente
         .slice(0, 4)
     }
   } catch {

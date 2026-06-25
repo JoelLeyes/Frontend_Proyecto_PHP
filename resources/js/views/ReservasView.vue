@@ -39,7 +39,7 @@
         </thead>
         <tbody>
           <tr v-for="reserva in store.reservas" :key="reserva.id">
-            <td><strong>{{ reserva.servicio?.nombre }}</strong></td>
+            <td><strong>{{ reserva.servicio?.nombre }}</strong></td>//
             <td v-if="esProfesional">{{ reserva.cliente?.name || '—' }}</td>
             <td v-else>{{ reserva.profesional?.name || '—' }}</td>
             <td class="td-fecha">{{ formatearFecha(reserva.fecha_hora) }}</td>
@@ -218,7 +218,7 @@
               <div v-else class="alerta alerta--info" style="margin-top:.5rem">
                 No hay horarios disponibles para esta fecha.
               </div>
-            </template>
+            </template>//
 
             <p v-if="modalReprogramar.error" class="alerta alerta--error">{{ modalReprogramar.error }}</p>
           </div>

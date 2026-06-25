@@ -117,7 +117,7 @@ const modalRol = ref({
   error: '',
 })
 
-function obtenerUrlOAuth(proveedor) {
+function obtenerUrlOAuth(proveedor) { // Devuelve la URL de redirección para iniciar sesión con un proveedor OAuth
   const baseUrl = new URL(axios.defaults.baseURL || globalThis.location.origin, globalThis.location.origin)
   return new URL(`/api/auth/${proveedor}/redirect`, baseUrl).toString()
 }
@@ -127,7 +127,7 @@ function iniciarOAuth(proveedor) {
   globalThis.location.href = obtenerUrlOAuth(proveedor)
 }
 
-onMounted(async () => {
+onMounted(async () => { // Maneja la respuesta de OAuth después de redirigir desde el proveedor
   const tokenOAuth   = ruta.query.oauth_token?.toString()
   const errorOAuth   = ruta.query.oauth_error?.toString()
   const pendingToken = ruta.query.oauth_pending?.toString()
@@ -157,7 +157,7 @@ onMounted(async () => {
   }
 })
 
-async function completarRegistroOAuth() {
+async function completarRegistroOAuth() { // Completa el registro de un usuario nuevo con Google después de elegir un rol
   modalRol.value.error    = ''
   modalRol.value.enviando = true
   try {
@@ -179,7 +179,7 @@ async function manejarInicioSesion() {
   error.value    = ''
   cargando.value = true
   auth.limpiarSesionLocal()
-  try {
+  try { // Intenta iniciar sesión con email y contraseña
     await auth.iniciarSesion(formulario.value.email, formulario.value.password)
     enrutador.push({ name: 'panel' })
   } catch (e) {

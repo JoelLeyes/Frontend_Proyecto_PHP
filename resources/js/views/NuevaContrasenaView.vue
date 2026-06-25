@@ -76,7 +76,7 @@ import axios from 'axios'
 
 const ruta = useRoute()
 
-const formulario = ref({ password: '', password_confirmation: '' })
+const formulario = ref({ password: '', password_confirmation: '' }) // Objeto que contiene la nueva contraseña y su confirmación
 const error          = ref('')
 const cargando       = ref(false)
 const exito          = ref(false)
@@ -95,7 +95,7 @@ onMounted(() => {
 
 const requisitos = computed(() => {
   const p = formulario.value.password
-  return {
+  return { // Computed property que verifica los requisitos de la contraseña
     longitud:  p.length >= 8,
     mayuscula: /[A-Z]/.test(p),
     minuscula: /[a-z]/.test(p),
@@ -106,10 +106,10 @@ const requisitos = computed(() => {
 })
 
 const formularioValido = computed(() =>
-  Object.values(requisitos.value).every(Boolean)
+  Object.values(requisitos.value).every(Boolean) // Computed property que indica si el formulario es válido según los requisitos de la contraseña
 )
 
-async function restablecer() {
+async function restablecer() { // Maneja el restablecimiento de la contraseña al enviar el formulario
   if (cargando.value || !formularioValido.value) return
   error.value    = ''
   cargando.value = true

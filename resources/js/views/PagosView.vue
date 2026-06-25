@@ -95,7 +95,7 @@ const totalFormato = computed(() => {
   return suma.toFixed(2)
 })
 
-async function cargar() {
+async function cargar() { // Carga los pagos del profesional según los filtros de fecha y la página actual
   cargando.value = true
   try {
     const profesionalId = auth.usuario?.profesional?.id
@@ -105,7 +105,7 @@ async function cargar() {
     if (desde.value) params.desde = desde.value
     if (hasta.value) params.hasta = hasta.value
 
-    const { data } = await axios.get(`/api/profesionales/${profesionalId}/pagos`, { params })
+    const { data } = await axios.get(`/api/profesionales/${profesionalId}/pagos`, { params }) // Obtiene los pagos del profesional desde la API con los parámetros de filtro
     pagos.value = data.data ?? data
     meta.value  = data.meta ?? null
   } finally {
@@ -117,14 +117,14 @@ function limpiarFiltros() {
   desde.value = ''; hasta.value = ''; pagina.value = 1; cargar()
 }
 
-function irA(n) { pagina.value = n; cargar() }
+function irA(n) { pagina.value = n; cargar() } // Cambia la página actual y recarga los pagos
 
 function formatFecha(f) {
   if (!f) return '—'
   return new Date(f).toLocaleDateString('es-UY', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
-function conceptoPago(p) {
+function conceptoPago(p) { // Devuelve el concepto del pago según el tipo de pagable (Reserva o PaqueteCliente)
   if (p.pagable_type?.includes('Reserva')) {
     return p.pagable ? `Reserva #${p.pagable.id}` : 'Reserva individual'
   }
@@ -144,13 +144,13 @@ function tipoInsignia(p) {
   return p.pagable_type?.includes('Reserva') ? 'insignia--confirmada' : 'insignia--pendiente'
 }
 
-function suscribirCobrosProfesional() {
-  const echo = getEcho()
+function suscribirCobrosProfesional() { // Suscribe al profesional a un canal de Echo para recibir notificaciones en tiempo real de nuevos cobros
+  const echo = getEcho() // Obtiene la instancia de Echo para suscribirse a canales de WebSocket
   const profesionalId = auth.usuario?.profesional?.id
 
   if (!echo || !profesionalId) return
 
-  const nuevoCanal = `professional.${profesionalId}`
+  const nuevoCanal = `professional.${profesionalId}` // Canal privado de Echo para el profesional actual
   if (canalCobros === nuevoCanal) return
 
   if (canalCobros) {
@@ -163,12 +163,12 @@ function suscribirCobrosProfesional() {
 
   canalCobros = nuevoCanal
 
-  echo.private(nuevoCanal).listen('.cobro.actualizado', () => {
+  echo.private(nuevoCanal).listen('.cobro.actualizado', () => { // Escucha el evento de cobro actualizado y recarga los pagos
     cargar()
   })
 }
 
-function limpiarSuscripcionCobros() {
+function limpiarSuscripcionCobros() { // Limpia la suscripción al canal de Echo cuando el componente se desmonta
   const echo = getEcho()
 
   if (echo && canalCobros) {
