@@ -39,7 +39,7 @@
         </thead>
         <tbody>
           <tr v-for="reserva in store.reservas" :key="reserva.id">
-            <td><strong>{{ reserva.servicio?.nombre }}</strong></td>//
+            <td><strong>{{ reserva.servicio?.nombre }}</strong></td>
             <td v-if="esProfesional">{{ reserva.cliente?.name || '—' }}</td>
             <td v-else>{{ reserva.profesional?.name || '—' }}</td>
             <td class="td-fecha">{{ formatearFecha(reserva.fecha_hora) }}</td>
